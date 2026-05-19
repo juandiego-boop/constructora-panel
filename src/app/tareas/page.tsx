@@ -11,7 +11,7 @@ import { ClipboardList, AlertCircle, Clock } from "lucide-react";
 async function getTareas() {
   const { data } = await supabase
     .from("tareas")
-    .select("*, obras(nombre_obra)")
+    .select("*, obras(nombre)")
     .not("estado", "eq", "completada")
     .order("fecha_vencimiento", { ascending: true })
     .limit(50);
@@ -116,7 +116,7 @@ export default async function TareasPage() {
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-gray-600 text-xs">
-                      {t.obras?.nombre_obra ?? "—"}
+                      {t.obras?.nombre ?? "—"}
                     </td>
                     <td className="px-4 py-3.5 text-gray-700">
                       {t.responsable ?? "—"}

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 const ESTADOS = [
   { value: "planificacion", label: "Planificación" },
   { value: "en_ejecucion",  label: "En ejecución" },
-  { value: "en_pausa",      label: "En pausa" },
+  { value: "pausada",      label: "En pausa" },
 ];
 
 export default function NuevaObraBtn() {

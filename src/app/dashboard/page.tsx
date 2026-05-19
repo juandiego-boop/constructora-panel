@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { supabase, formatPeso } from "@/lib/supabase";
 import KPICard from "@/components/KPICard";
 import PageHeader from "@/components/PageHeader";
-import Badge, { estadoObraVariant, estadoProspectoVariant, prioridadVariant } from "@/components/Badge";
+import Badge, { estadoObraVariant, estadoProspectoVariant } from "@/components/Badge";
 import {
   HardHat, Users, DollarSign, TrendingUp,
   AlertTriangle, CheckCircle, Package, Calendar,
@@ -27,7 +27,7 @@ async function getObrasActivas() {
   const { data } = await supabase
     .from("v_dashboard_obras")
     .select("*")
-    .in("estado", ["en_ejecucion", "en_pausa"])
+    .in("estado", ["en_ejecucion", "pausada"])
     .order("avance_porcentaje", { ascending: true })
     .limit(5);
   return data ?? [];
@@ -36,7 +36,7 @@ async function getObrasActivas() {
 async function getProspectosRecientes() {
   const { data } = await supabase
     .from("prospectos")
-    .select("id, nombre_completo, telefono, tipo_proyecto, estado, prioridad, fuente, presupuesto_estimado, created_at")
+    .select("id, nombre, telefono, tipo_proyecto, estado_crm, fuente, presupuesto_estimado, created_at")
     .order("created_at", { ascending: false })
     .limit(6);
   return data ?? [];
@@ -176,17 +176,12 @@ export default async function DashboardPage() {
               ) : prospectos.slice(0, 4).map((p: any) => (
                 <div key={p.id} className="px-5 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{p.nombre_completo}</p>
+                    <p className="text-sm font-medium text-gray-800">{p.nombre}</p>
                     <p className="text-xs text-gray-400">{p.tipo_proyecto?.replace("_", " ")} · {p.fuente}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    {p.prioridad && (
-                      <Badge variant={prioridadVariant[p.prioridad] ?? "gray"} className="text-[10px]">
-                        {p.prioridad === "alta" ? "🔥" : p.prioridad === "media" ? "🟡" : "❄️"} {p.prioridad}
-                      </Badge>
-                    )}
-                    <Badge variant={estadoProspectoVariant[p.estado] ?? "gray"} className="text-[10px]">
-                      {p.estado}
+                    <Badge variant={estadoProspectoVariant[p.estado_crm] ?? "gray"} className="text-[10px]">
+                      {p.estado_crm?.replace("_", " ")}
                     </Badge>
                   </div>
                 </div>

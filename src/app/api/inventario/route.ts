@@ -19,7 +19,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Insertar en tabla materiales
     const materialInsert: Record<string, unknown> = {
       nombre,
       categoria,
@@ -36,7 +35,6 @@ export async function POST(req: Request) {
 
     if (matError) return NextResponse.json({ error: matError.message }, { status: 500 });
 
-    // 2. Insertar en tabla inventario
     const inventarioInsert: Record<string, unknown> = {
       material_id:     material.id,
       cantidad_actual: Number(cantidad_actual ?? 0),

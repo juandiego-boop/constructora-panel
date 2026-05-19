@@ -6,9 +6,9 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const { data, error } = await supabase
     .from("obras")
-    .select("id, nombre_obra, codigo_obra")
+    .select("id, nombre, codigo_obra")
     .not("estado", "eq", "cancelada")
-    .order("nombre_obra");
+    .order("nombre");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data ?? []);
 }
@@ -17,16 +17,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const {
-      nombre_obra, codigo_obra, descripcion, ciudad, direccion,
+      nombre_obra, nombre, codigo_obra, descripcion, ciudad, direccion,
       estado, presupuesto_total, fecha_inicio, fecha_fin_estimada,
     } = body;
+    const obra_nombre = nombre || nombre_obra;
 
-    if (!nombre_obra) {
-      return NextResponse.json({ error: "nombre_obra es requerido" }, { status: 400 });
+    if (!obra_nombre) {
+      return NextResponse.json({ error: "nombre es requerido" }, { status: 400 });
     }
 
     const insert: Record<string, unknown> = {
-      nombre_obra,
+      nombre: obra_nombre,
       estado: estado || "planificacion",
       avance_porcentaje: 0,
     };

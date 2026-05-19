@@ -35,9 +35,9 @@ export default async function ProspectosPage() {
 
   const stats = {
     total: prospectos.length,
-    nuevos: prospectos.filter((p: any) => p.estado === "nuevo").length,
+    nuevos: prospectos.filter((p: any) => p.estado_crm === "nuevo").length,
     hot: prospectos.filter((p: any) => p.prioridad === "alta").length,
-    convertidos: prospectos.filter((p: any) => p.estado === "convertido").length,
+    convertidos: prospectos.filter((p: any) => p.estado_crm === "convertido").length,
   };
 
   return (
@@ -88,7 +88,7 @@ export default async function ProspectosPage() {
               ) : prospectos.map((p: any) => (
                 <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3.5">
-                    <p className="font-medium text-gray-900">{p.nombre_completo}</p>
+                    <p className="font-medium text-gray-900">{p.nombre}</p>
                     <p className="text-xs text-gray-400 flex items-center gap-1">
                       <MapPin className="w-3 h-3" />{p.ciudad ?? "—"}
                     </p>
@@ -120,8 +120,8 @@ export default async function ProspectosPage() {
                     )}
                   </td>
                   <td className="px-4 py-3.5">
-                    <Badge variant={estadoProspectoVariant[p.estado] ?? "gray"}>
-                      {ESTADO_LABELS[p.estado] ?? p.estado}
+                    <Badge variant={estadoProspectoVariant[p.estado_crm] ?? "gray"}>
+                      {ESTADO_LABELS[p.estado_crm] ?? p.estado_crm}
                     </Badge>
                   </td>
                   <td className="px-4 py-3.5 text-xs text-gray-400">

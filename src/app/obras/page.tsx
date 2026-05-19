@@ -26,7 +26,7 @@ async function getUtilidadObras() {
 const ESTADO_LABELS: Record<string, string> = {
   planificacion: "Planificación",
   en_ejecucion: "En ejecución",
-  en_pausa: "En pausa",
+  pausada: "En pausa",
   finalizada: "Finalizada",
   cancelada: "Cancelada",
 };
@@ -35,7 +35,7 @@ export default async function ObrasPage() {
   const [obras, utilidades] = await Promise.all([getObras(), getUtilidadObras()]);
 
   const activas  = obras.filter((o: any) => o.estado === "en_ejecucion").length;
-  const enPausa  = obras.filter((o: any) => o.estado === "en_pausa").length;
+  const enPausa  = obras.filter((o: any) => o.estado === "pausada").length;
   const finalizadas = obras.filter((o: any) => o.estado === "finalizada").length;
   const presupuestoTotal = obras.reduce((s: number, o: any) => s + (o.presupuesto_total ?? 0), 0);
 

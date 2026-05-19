@@ -8,7 +8,7 @@ const CATEGORIAS = [
   "materiales", "mano_obra", "maquinaria", "transporte", "administrativo", "otro"
 ];
 
-type Obra = { id: string; nombre_obra: string; codigo_obra?: string };
+type Obra = { id: string; nombre: string; codigo_obra?: string };
 
 export default function NuevoGastoBtn() {
   const [open, setOpen]       = useState(false);
@@ -96,7 +96,7 @@ export default function NuevoGastoBtn() {
                     <option value="">— Sin obra asociada —</option>
                     {obras.map(o => (
                       <option key={o.id} value={o.id}>
-                        {o.codigo_obra ? `[${o.codigo_obra}] ` : ""}{o.nombre_obra}
+                        {o.codigo_obra ? `[${o.codigo_obra}] ` : ""}{o.nombre}
                       </option>
                     ))}
                   </select>

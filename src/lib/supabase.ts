@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, serviceRoleKey, {
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
 export type EstadoObra =
-  | "planificacion" | "en_ejecucion" | "en_pausa" | "finalizada" | "cancelada";
+  | "planificacion" | "en_ejecucion" | "pausada" | "finalizada" | "cancelada";
 
 export type EstadoProspecto =
   | "nuevo" | "contactado" | "en_negociacion" | "convertido" | "perdido";
@@ -20,7 +20,7 @@ export type PrioridadProspecto = "alta" | "media" | "baja";
 
 export type Prospecto = {
   id: string;
-  nombre_completo: string;
+  nombre: string;
   telefono: string;
   whatsapp?: string;
   email?: string;
@@ -28,7 +28,7 @@ export type Prospecto = {
   tipo_proyecto?: string;
   fuente?: string;
   presupuesto_estimado?: number;
-  estado: EstadoProspecto;
+  estado_crm: EstadoProspecto;
   prioridad?: PrioridadProspecto;
   fecha_primer_contacto?: string;
   notas?: string;
@@ -38,7 +38,7 @@ export type Prospecto = {
 export type Obra = {
   id: string;
   codigo_obra?: string;
-  nombre_obra: string;
+  nombre: string;
   descripcion?: string;
   estado: EstadoObra;
   avance_porcentaje?: number;

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 const PRIORIDADES = ["critica", "alta", "media", "baja"];
 const ESTADOS     = ["pendiente", "en_progreso", "bloqueada"];
 
-type Obra = { id: string; nombre_obra: string; codigo_obra?: string };
+type Obra = { id: string; nombre: string; codigo_obra?: string };
 
 export default function NuevaTareaBtn() {
   const [open, setOpen]       = useState(false);
@@ -103,7 +103,7 @@ export default function NuevaTareaBtn() {
                     <option value="">— Sin obra asociada —</option>
                     {obras.map(o => (
                       <option key={o.id} value={o.id}>
-                        {o.codigo_obra ? `[${o.codigo_obra}] ` : ""}{o.nombre_obra}
+                        {o.codigo_obra ? `[${o.codigo_obra}] ` : ""}{o.nombre}
                       </option>
                     ))}
                   </select>
