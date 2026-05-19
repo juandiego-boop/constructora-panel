@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { supabase, formatPeso, formatFecha } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge, { estadoPagoVariant } from "@/components/Badge";
 import NuevoGastoBtn from "./NuevoGastoBtn";
 import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Calendar } from "lucide-react";
 
-export const revalidate = 30;
+
 
 async function getPagosProximos() {
   const { data } = await supabase

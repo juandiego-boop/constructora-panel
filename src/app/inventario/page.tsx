@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { supabase, formatPeso } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge from "@/components/Badge";
 import NuevoMaterialBtn from "./NuevoMaterialBtn";
 import { Package, AlertTriangle } from "lucide-react";
 
-export const revalidate = 60;
+
 
 async function getInventario() {
   const { data } = await supabase

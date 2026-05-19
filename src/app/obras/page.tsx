@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { supabase, formatPeso, formatFecha } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge, { estadoObraVariant } from "@/components/Badge";
 import NuevaObraBtn from "./NuevaObraBtn";
 import { HardHat, MapPin, Calendar, TrendingUp, AlertTriangle } from "lucide-react";
 
-export const revalidate = 30;
+
 
 async function getObras() {
   const { data } = await supabase

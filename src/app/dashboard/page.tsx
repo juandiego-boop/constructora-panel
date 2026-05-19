@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { supabase, formatPeso } from "@/lib/supabase";
 import KPICard from "@/components/KPICard";
 import PageHeader from "@/components/PageHeader";
@@ -7,7 +9,7 @@ import {
   AlertTriangle, CheckCircle, Package, Calendar,
 } from "lucide-react";
 
-export const revalidate = 60; // refresca cada 60s
+ // refresca cada 60s
 
 async function getKPIs() {
   const { data, error } = await supabase.rpc("kpis_generales");

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
@@ -40,6 +42,4 @@ export async function POST(req: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
-  }
-}
+    return NextResponse.json({ error: "Error interno 

@@ -1,10 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { supabase, formatFecha } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge from "@/components/Badge";
 import NuevaTareaBtn from "./NuevaTareaBtn";
 import { ClipboardList, AlertCircle, Clock } from "lucide-react";
 
-export const revalidate = 30;
+
 
 async function getTareas() {
   const { data } = await supabase
