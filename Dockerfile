@@ -20,7 +20,7 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
 ENV NEXT_PUBLIC_N8N_URL=$NEXT_PUBLIC_N8N_URL
 
-RUN npm run build
+RUN mkdir -p ./public && npm run build
 
 # ── Runner (imagen final mínima) ──────────────────────────────────────────────
 FROM base AS runner
