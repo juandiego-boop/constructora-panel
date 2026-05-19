@@ -84,7 +84,7 @@ export default async function ObrasPage() {
                       <HardHat className="w-4 h-4 text-[#1a5276]" />
                       <h3 className="font-semibold text-gray-900">{o.nombre_obra}</h3>
                       {enRiesgo && (
-                        <AlertTriangle className="w-4 h-4 text-red-500" title="Presupuesto en riesgo" />
+                        <AlertTriangle className="w-4 h-4 text-red-500" aria-label="Presupuesto en riesgo" />
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
