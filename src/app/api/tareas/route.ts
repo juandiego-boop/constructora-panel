@@ -14,12 +14,12 @@ export async function POST(req: Request) {
 
     const insert: Record<string, unknown> = {
       titulo,
-      estado:   estado   || "pendiente",
+      estado:    estado    || "pendiente",
       prioridad: prioridad || "media",
     };
-    if (obra_id)          insert.obra_id          = obra_id;
-    if (descripcion)      insert.descripcion      = descripcion;
-    if (responsable)      insert.responsable      = responsable;
+    if (obra_id)           insert.obra_id           = obra_id;
+    if (descripcion)       insert.descripcion       = descripcion;
+    if (responsable)       insert.responsable       = responsable;
     if (fecha_vencimiento) insert.fecha_vencimiento = fecha_vencimiento;
 
     const { data, error } = await supabase.from("tareas").insert([insert]).select().single();

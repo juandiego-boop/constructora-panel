@@ -9,7 +9,10 @@ export async function POST(req: Request) {
     const { obra_id, categoria, descripcion, monto, fecha_gasto, proveedor } = body;
 
     if (!descripcion || !monto || !fecha_gasto || !categoria) {
-      return NextResponse.json({ error: "Faltan campos requeridos: categoria, descripcion, monto, fecha_gasto" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Faltan campos requeridos: categoria, descripcion, monto, fecha_gasto" },
+        { status: 400 }
+      );
     }
 
     const insert: Record<string, unknown> = {
