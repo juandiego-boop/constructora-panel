@@ -27,11 +27,12 @@ async function getFlujoCaja() {
 }
 
 async function getGastosRecientes() {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("gastos")
-    .select("id, categoria, descripcion, valor, fecha_gasto, obra_id, proveedores(nombre)")
-    .order("fecha_gasto", { ascending: false })
+    .select("id, categoria, descripcion, valor, fecha_gasto, obra_id")
+    .order("created_at", { ascending: false })
     .limit(15);
+  if (error) console.error("getGastosRecientes:", error.message);
   return data ?? [];
 }
 
@@ -307,7 +308,7 @@ export default async function FinanzasPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-700">{g.descripcion}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{g.proveedores?.nombre ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">—</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800">
                     {formatPeso(g.valor)}
                   </td>
