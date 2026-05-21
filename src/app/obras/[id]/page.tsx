@@ -45,7 +45,7 @@ async function getObra(id: string) {
 async function getTareas(obraId: string) {
   const { data } = await supabase
     .from("tareas")
-    .select("id, titulo, descripcion, estado, prioridad, responsable, fecha_inicio_plan, fecha_fin_plan")
+    .select("id, nombre, descripcion, estado, prioridad, fecha_inicio_plan, fecha_fin_plan")
     .eq("obra_id", obraId)
     .order("fecha_fin_plan", { ascending: true });
   return data ?? [];
@@ -202,12 +202,7 @@ export default async function ObraDetallePage({ params }: Props) {
                   {ESTADO_TAREA[t.estado] ?? t.estado}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{t.titulo}</p>
-                  {t.responsable && (
-                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                      <User className="w-3 h-3" /> {t.responsable}
-                    </p>
-                  )}
+                  <p className="text-sm font-medium text-gray-800 truncate">{t.nombre}</p>
                   {t.fecha_fin_plan && (
                     <p className="text-xs text-gray-400 mt-0.5">
                       <Calendar className="w-3 h-3 inline mr-0.5" /> {formatFecha(t.fecha_fin_plan)}

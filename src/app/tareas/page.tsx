@@ -11,9 +11,9 @@ import { ClipboardList, AlertCircle, Clock } from "lucide-react";
 async function getTareas() {
   const { data } = await supabase
     .from("tareas")
-    .select("*, obras(nombre)")
+    .select("id, nombre, descripcion, estado, prioridad, fecha_fin_plan, obra_id, obras(nombre)")
     .not("estado", "eq", "completada")
-    .order("fecha_vencimiento", { ascending: true })
+    .order("fecha_fin_plan", { ascending: true })
     .limit(50);
   return data ?? [];
 }
@@ -101,7 +101,7 @@ export default async function TareasPage() {
                 </tr>
               ) : tareas.map((t: any) => {
                 const hoy = new Date();
-                const vence = t.fecha_vencimiento ? new Date(t.fecha_vencimiento) : null;
+                const vence = t.fecha_fin_plan ? new Date(t.fecha_fin_plan) : null;
                 const vencida = vence && vence < hoy && t.estado !== "completada";
                 const diasRestantes = vence
                   ? Math.ceil((vence.getTime() - hoy.getTime()) / 86400000)
@@ -110,7 +110,7 @@ export default async function TareasPage() {
                 return (
                   <tr key={t.id} className={`hover:bg-gray-50/50 transition-colors ${vencida ? "bg-red-50/30" : ""}`}>
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-gray-900">{t.titulo}</p>
+                      <p className="font-medium text-gray-900">{t.nombre}</p>
                       {t.descripcion && (
                         <p className="text-xs text-gray-400 truncate max-w-xs">{t.descripcion}</p>
                       )}
@@ -118,14 +118,12 @@ export default async function TareasPage() {
                     <td className="px-4 py-3.5 text-gray-600 text-xs">
                       {t.obras?.nombre ?? "—"}
                     </td>
-                    <td className="px-4 py-3.5 text-gray-700">
-                      {t.responsable ?? "—"}
-                    </td>
+                    <td className="px-4 py-3.5 text-gray-700">—</td>
                     <td className="px-4 py-3.5">
                       {vence ? (
                         <div>
                           <p className={`text-xs font-medium ${vencida ? "text-red-600" : diasRestantes! <= 3 ? "text-orange-500" : "text-gray-500"}`}>
-                            {formatFecha(t.fecha_vencimiento)}
+                            {formatFecha(t.fecha_fin_plan)}
                           </p>
                           {diasRestantes !== null && (
                             <p className={`text-[10px] ${vencida ? "text-red-500 font-semibold" : "text-gray-400"}`}>

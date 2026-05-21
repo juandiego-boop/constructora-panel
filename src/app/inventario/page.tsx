@@ -6,12 +6,10 @@ import Badge from "@/components/Badge";
 import NuevoMaterialBtn from "./NuevoMaterialBtn";
 import { Package, AlertTriangle } from "lucide-react";
 
-
-
 async function getInventario() {
   const { data } = await supabase
     .from("inventario")
-    .select("*, materiales(nombre, codigo, unidad_medida, categoria)")
+    .select("*, materiales(nombre, codigo, unidad_medida, categoria, stock_minimo, precio_unitario_referencia)")
     .order("updated_at", { ascending: false });
   return data ?? [];
 }
@@ -42,8 +40,8 @@ export default async function InventarioPage() {
             </p>
             <ul className="mt-1 text-sm text-red-700 space-y-0.5">
               {stockBajo.map((m: any) => (
-                <li key={m.material_id ?? m.nombre}>
-                  • {m.nombre} [{m.codigo}] — Stock: {m.stock_actual}/{m.stock_minimo} {m.unidad}
+                <li key={m.id}>
+                  • {m.material_nombre} — Stock: {m.cantidad_disponible}/{m.stock_minimo} {m.unidad_medida}
                 </li>
               ))}
             </ul>
@@ -74,14 +72,14 @@ export default async function InventarioPage() {
                 </tr>
               ) : inventario.map((item: any) => {
                 const mat = item.materiales ?? {};
-                const stock = item.cantidad_actual ?? 0;
-                const minimo = item.stock_minimo ?? 0;
+                const stock = item.cantidad_disponible ?? 0;
+                const minimo = mat.stock_minimo ?? 0;
                 const pct = minimo > 0 ? (stock / minimo) * 100 : 100;
                 const agotado = stock === 0;
-                const bajo = pct < 100 && pct > 0;
+                const bajo = !agotado && pct < 100;
 
                 return (
-                  <tr key={item.id} className="hover:bg-gray-50/50">
+                  <tr key={item.id} className={`hover:bg-gray-50/50 ${agotado || bajo ? "bg-red-50/30" : ""}`}>
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-gray-900">{mat.nombre ?? "—"}</p>
                       <p className="text-xs text-gray-400 font-mono">{mat.codigo ?? ""}</p>
@@ -98,7 +96,7 @@ export default async function InventarioPage() {
                       {minimo} <span className="text-xs text-gray-400">{mat.unidad_medida}</span>
                     </td>
                     <td className="px-4 py-3.5 text-right text-gray-700">
-                      {formatPeso(item.precio_unitario)}
+                      {mat.precio_unitario_referencia ? formatPeso(mat.precio_unitario_referencia) : "—"}
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       {agotado ? (
