@@ -4,7 +4,7 @@ import { supabase, formatPeso, formatFecha } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge, { estadoPagoVariant } from "@/components/Badge";
 import NuevoGastoBtn from "./NuevoGastoBtn";
-import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Calendar } from "lucide-react";
+import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Calendar, Package } from "lucide-react";
 
 
 
@@ -29,34 +29,75 @@ async function getFlujoCaja() {
 async function getGastosRecientes() {
   const { data } = await supabase
     .from("gastos")
-    .select("id, categoria, descripcion, monto, fecha_gasto, proveedor")
+    .select("id, categoria, descripcion, valor, fecha_gasto, proveedor, obra_id")
     .order("fecha_gasto", { ascending: false })
-    .limit(10);
+    .limit(15);
   return data ?? [];
 }
 
 async function getResumenFinanciero() {
+  // Pagos: usar columna real "valor"
   const { data: pagos } = await supabase
     .from("pagos")
-    .select("monto, monto_pagado, estado");
-  const total = (pagos ?? []).reduce((s: number, p: any) => s + (p.monto ?? 0), 0);
-  const cobrado = (pagos ?? []).reduce((s: number, p: any) => s + (p.monto_pagado ?? 0), 0);
+    .select("valor, estado");
+  const total = (pagos ?? []).reduce((s: number, p: any) => s + (p.valor ?? 0), 0);
+  const cobrado = (pagos ?? []).filter((p: any) => p.estado === "pagado").reduce((s: number, p: any) => s + (p.valor ?? 0), 0);
   const pendiente = total - cobrado;
   const vencidos = (pagos ?? []).filter((p: any) => p.estado === "vencido").length;
   return { total, cobrado, pendiente, vencidos };
 }
 
+async function getGastosPorCategoria() {
+  const { data } = await supabase
+    .from("gastos")
+    .select("categoria, valor");
+  const map: Record<string, number> = {};
+  (data ?? []).forEach((g: any) => {
+    const cat = g.categoria ?? "otros";
+    map[cat] = (map[cat] ?? 0) + (g.valor ?? 0);
+  });
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+}
+
+async function getGastosPorObra() {
+  const { data } = await supabase
+    .from("gastos")
+    .select("obra_id, valor, obras(nombre)");
+  const map: Record<string, { nombre: string; total: number }> = {};
+  (data ?? []).forEach((g: any) => {
+    const id = g.obra_id ?? "sin_obra";
+    const nombre = g.obras?.nombre ?? "Sin obra";
+    if (!map[id]) map[id] = { nombre, total: 0 };
+    map[id].total += g.valor ?? 0;
+  });
+  return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 5);
+}
+
 const MESES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
+const CAT_COLORS: Record<string, string> = {
+  mano_de_obra: "bg-blue-500",
+  materiales: "bg-green-500",
+  equipos: "bg-purple-500",
+  subcontratos: "bg-orange-500",
+  administrativo: "bg-gray-400",
+  otros: "bg-gray-300",
+};
+
 export default async function FinanzasPage() {
-  const [pagos, flujo, gastos, resumen] = await Promise.all([
+  const [pagos, flujo, gastos, resumen, porCategoria, porObra] = await Promise.all([
     getPagosProximos(),
     getFlujoCaja(),
     getGastosRecientes(),
     getResumenFinanciero(),
+    getGastosPorCategoria(),
+    getGastosPorObra(),
   ]);
 
-  const maxFlujo = Math.max(...flujo.map((f: any) => Math.abs(f.flujo_neto ?? 0)), 1);
+  const maxFlujo = Math.max(...flujo.map((f: any) => Math.max(f.total_ingresos ?? 0, f.total_egresos ?? 0)), 1);
+  const maxCat = porCategoria.length > 0 ? porCategoria[0][1] : 1;
 
   return (
     <div>
@@ -86,6 +127,7 @@ export default async function FinanzasPage() {
         </div>
       </div>
 
+      {/* Fila 1: Flujo + Pagos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Flujo de caja */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -97,29 +139,34 @@ export default async function FinanzasPage() {
             {flujo.length === 0 ? (
               <p className="text-center text-gray-400 text-sm py-6">Sin datos de flujo de caja</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {[...flujo].reverse().map((f: any) => {
-                  const pct = Math.abs(f.flujo_neto ?? 0) / maxFlujo * 100;
-                  const positivo = (f.flujo_neto ?? 0) >= 0;
+                  const pctIngreso = Math.round((f.total_ingresos ?? 0) / maxFlujo * 100);
+                  const pctEgreso  = Math.round((f.total_egresos ?? 0) / maxFlujo * 100);
+                  const neto = (f.flujo_neto ?? 0);
                   return (
                     <div key={`${f.anio}-${f.mes}`}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="font-medium text-gray-600">{MESES[f.mes]} {f.anio}</span>
-                        <span className={`font-bold ${positivo ? "text-green-600" : "text-red-600"}`}>
-                          {positivo ? "+" : ""}{formatPeso(f.flujo_neto)}
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="font-semibold text-gray-700">{MESES[f.mes]} {f.anio}</span>
+                        <span className={`font-bold ${neto >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {neto >= 0 ? "+" : ""}{formatPeso(neto)}
                         </span>
                       </div>
-                      <div className="flex gap-1 items-center">
-                        <div className="flex-1 bg-gray-100 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${positivo ? "bg-green-500" : "bg-red-400"}`}
-                            style={{ width: `${pct}%` }}
-                          />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-green-600 w-14 text-right">{formatPeso(f.total_ingresos).replace("$", "")}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-2">
+                            <div className="h-2 rounded-full bg-green-500" style={{ width: `${pctIngreso}%` }} />
+                          </div>
+                          <TrendingUp className="w-2.5 h-2.5 text-green-500" />
                         </div>
-                      </div>
-                      <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-                        <span className="flex items-center gap-1"><TrendingUp className="w-2.5 h-2.5 text-green-500" />{formatPeso(f.total_ingresos)}</span>
-                        <span className="flex items-center gap-1"><TrendingDown className="w-2.5 h-2.5 text-red-400" />{formatPeso(f.total_egresos)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-red-500 w-14 text-right">{formatPeso(f.total_egresos).replace("$", "")}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-2">
+                            <div className="h-2 rounded-full bg-red-400" style={{ width: `${pctEgreso}%` }} />
+                          </div>
+                          <TrendingDown className="w-2.5 h-2.5 text-red-400" />
+                        </div>
                       </div>
                     </div>
                   );
@@ -139,31 +186,84 @@ export default async function FinanzasPage() {
             {pagos.length === 0 ? (
               <p className="px-5 py-8 text-center text-gray-400 text-sm">Sin pagos próximos</p>
             ) : pagos.map((p: any) => {
-              const saldo = (p.monto ?? 0) - (p.monto_pagado ?? 0);
-              const diasRestantes = p.fecha_vencimiento
-                ? Math.ceil((new Date(p.fecha_vencimiento).getTime() - Date.now()) / 86400000)
-                : null;
+              const diasRestantes = p.dias_para_vencer ?? null;
               return (
                 <div key={p.id} className="px-5 py-3.5 flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 text-sm truncate">{p.concepto}</p>
+                    <p className="font-medium text-gray-800 text-sm truncate">{p.concepto ?? p.descripcion ?? "—"}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatFecha(p.fecha_vencimiento)}
                       </span>
                       {diasRestantes !== null && (
-                        <span className={`text-xs font-medium ${diasRestantes <= 3 ? "text-red-600" : diasRestantes <= 7 ? "text-orange-500" : "text-gray-400"}`}>
-                          {diasRestantes <= 0 ? "VENCIDO" : `${diasRestantes}d`}
+                        <span className={`text-xs font-semibold ${diasRestantes < 0 ? "text-red-600" : diasRestantes <= 3 ? "text-orange-500" : "text-gray-400"}`}>
+                          {diasRestantes < 0 ? `VENCIDO (${Math.abs(diasRestantes)}d)` : `${diasRestantes}d`}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-bold text-gray-800 text-sm">{formatPeso(saldo)}</p>
+                    <p className="font-bold text-gray-800 text-sm">{formatPeso(p.valor ?? p.saldo ?? 0)}</p>
                     <Badge variant={estadoPagoVariant[p.estado] ?? "gray"} className="text-[10px]">
                       {p.estado}
                     </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Fila 2: Gastos por categoría + por obra */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Por categoría */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <Package className="w-4 h-4 text-[#1a5276]" />
+            <h2 className="font-semibold text-gray-800">Gastos por Categoría</h2>
+          </div>
+          <div className="p-5 space-y-3">
+            {porCategoria.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-4">Sin datos</p>
+            ) : porCategoria.map(([cat, total]) => {
+              const pct = Math.round((total / maxCat) * 100);
+              const color = CAT_COLORS[cat] ?? "bg-gray-400";
+              return (
+                <div key={cat}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="font-medium text-gray-600 capitalize">{cat.replace(/_/g, " ")}</span>
+                    <span className="font-semibold text-gray-800">{formatPeso(total)}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`h-2 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Por obra */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-[#1a5276]" />
+            <h2 className="font-semibold text-gray-800">Gastos por Obra</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {porObra.length === 0 ? (
+              <p className="px-5 py-8 text-center text-gray-400 text-sm">Sin datos</p>
+            ) : porObra.map((o) => {
+              const pct = Math.round((o.total / (porObra[0]?.total ?? 1)) * 100);
+              return (
+                <div key={o.nombre} className="px-5 py-3">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-gray-800 truncate">{o.nombre}</span>
+                    <span className="font-semibold text-gray-800 ml-2 whitespace-nowrap">{formatPeso(o.total)}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-[#1a5276]" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -186,7 +286,7 @@ export default async function FinanzasPage() {
                 <th className="px-4 py-3">Categoría</th>
                 <th className="px-4 py-3">Descripción</th>
                 <th className="px-4 py-3">Proveedor</th>
-                <th className="px-4 py-3 text-right">Monto</th>
+                <th className="px-4 py-3 text-right">Valor</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -202,14 +302,14 @@ export default async function FinanzasPage() {
                     {formatFecha(g.fecha_gasto)}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant="blue" className="capitalize">
+                    <Badge variant="blue" className="capitalize text-[10px]">
                       {g.categoria?.replace(/_/g, " ")}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-700">{g.descripcion}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{g.proveedor ?? "—"}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800">
-                    {formatPeso(g.monto)}
+                    {formatPeso(g.valor)}
                   </td>
                 </tr>
               ))}

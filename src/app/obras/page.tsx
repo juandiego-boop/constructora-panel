@@ -5,15 +5,18 @@ import PageHeader from "@/components/PageHeader";
 import Badge, { estadoObraVariant } from "@/components/Badge";
 import NuevaObraBtn from "./NuevaObraBtn";
 import ObraActionsBtn from "./ObraActionsBtn";
-import { HardHat, MapPin, Calendar, TrendingUp, AlertTriangle } from "lucide-react";
+import ObrasFilterTabs from "./ObrasFilterTabs";
+import { HardHat, MapPin, Calendar, TrendingUp, AlertTriangle, ExternalLink } from "lucide-react";
+import { Suspense } from "react";
+import Link from "next/link";
 
-
-
-async function getObras() {
-  const { data } = await supabase
+async function getObras(estado?: string) {
+  let query = supabase
     .from("v_dashboard_obras")
     .select("*")
     .order("nombre", { ascending: true });
+  if (estado) query = (query as any).eq("estado", estado);
+  const { data } = await query;
   return data ?? [];
 }
 
@@ -32,24 +35,29 @@ const ESTADO_LABELS: Record<string, string> = {
   cancelada: "Cancelada",
 };
 
-export default async function ObrasPage() {
-  const [obras, utilidades] = await Promise.all([getObras(), getUtilidadObras()]);
+type Props = { searchParams: { estado?: string } };
 
-  const activas  = obras.filter((o: any) => o.estado === "en_ejecucion").length;
-  const enPausa  = obras.filter((o: any) => o.estado === "pausada").length;
-  const finalizadas = obras.filter((o: any) => o.estado === "finalizada").length;
-  const presupuestoTotal = obras.reduce((s: number, o: any) => s + (o.presupuesto_total ?? 0), 0);
+export default async function ObrasPage({ searchParams }: Props) {
+  const estadoFilter = searchParams.estado;
+  const [obras, utilidades] = await Promise.all([getObras(estadoFilter), getUtilidadObras()]);
+
+  // Totales siempre sobre todas las obras
+  const [todasObras] = await Promise.all([getObras()]);
+  const activas     = todasObras.filter((o: any) => o.estado === "en_ejecucion").length;
+  const enPausa     = todasObras.filter((o: any) => o.estado === "pausada").length;
+  const finalizadas = todasObras.filter((o: any) => o.estado === "finalizada").length;
+  const presupuestoTotal = todasObras.reduce((s: number, o: any) => s + (o.presupuesto_total ?? 0), 0);
 
   return (
     <div>
       <PageHeader
         title="Obras"
-        subtitle={`${obras.length} obras registradas · ${activas} en ejecución`}
+        subtitle={`${todasObras.length} obras registradas · ${activas} en ejecución`}
         action={<NuevaObraBtn />}
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-5">
         {[
           { label: "En ejecución", value: activas, color: "bg-green-50 border-green-100 text-green-800" },
           { label: "En pausa", value: enPausa, color: "bg-yellow-50 border-yellow-100 text-yellow-800" },
@@ -63,11 +71,16 @@ export default async function ObrasPage() {
         ))}
       </div>
 
+      {/* Filtros */}
+      <Suspense fallback={null}>
+        <ObrasFilterTabs />
+      </Suspense>
+
       {/* Cards de obras */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {obras.length === 0 ? (
           <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center text-gray-400">
-            No hay obras registradas.
+            No hay obras en este estado.
           </div>
         ) : obras.map((o: any) => {
           const avance = o.avance_porcentaje ?? 0;
@@ -85,7 +98,9 @@ export default async function ObrasPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <HardHat className="w-4 h-4 text-[#1a5276]" />
-                      <h3 className="font-semibold text-gray-900">{o.nombre}</h3>
+                      <Link href={`/obras/${o.id}`} className="font-semibold text-gray-900 hover:text-[#1a5276] hover:underline transition-colors">
+                        {o.nombre}
+                      </Link>
                       {enRiesgo && (
                         <AlertTriangle className="w-4 h-4 text-red-500" aria-label="Presupuesto en riesgo" />
                       )}
@@ -156,8 +171,8 @@ export default async function ObrasPage() {
                   </div>
                 </div>
 
-                {/* Fechas */}
-                {(o.fecha_inicio || o.fecha_fin_estimada) && (
+                {/* Fechas + link detalle */}
+                <div className="flex items-center justify-between">
                   <div className="flex gap-4 text-xs text-gray-400">
                     {o.fecha_inicio && (
                       <span className="flex items-center gap-1">
@@ -170,7 +185,13 @@ export default async function ObrasPage() {
                       </span>
                     )}
                   </div>
-                )}
+                  <Link
+                    href={`/obras/${o.id}`}
+                    className="flex items-center gap-1 text-xs text-[#1a5276] hover:underline font-medium"
+                  >
+                    Ver detalle <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
               </div>
             </div>
           );
