@@ -12,15 +12,25 @@ import {
  // refresca cada 60s
 
 async function getKPIs() {
-  const { data, error } = await supabase.rpc("kpis_generales");
-  if (error) return null;
-  return data as {
-    obras_activas: number;
-    total_presupuesto: number;
-    total_gastos: number;
-    prospectos_nuevos: number;
-    clientes_activos: number;
-  } | null;
+  const [obrasRes, gastosRes, prospectoRes, clientesRes] = await Promise.all([
+    supabase.from("obras").select("presupuesto_total, estado").neq("estado", "cancelada"),
+    supabase.from("gastos").select("valor"),
+    supabase.from("prospectos").select("estado_crm"),
+    supabase.from("clientes").select("id"),
+  ]);
+
+  const obras = obrasRes.data ?? [];
+  const gastos = gastosRes.data ?? [];
+  const prospectos = prospectoRes.data ?? [];
+  const clientes = clientesRes.data ?? [];
+
+  return {
+    obras_activas: obras.filter((o: any) => ["en_ejecucion", "pausada"].includes(o.estado)).length,
+    total_presupuesto: obras.reduce((s: number, o: any) => s + (o.presupuesto_total ?? 0), 0),
+    total_gastos: gastos.reduce((s: number, g: any) => s + (g.valor ?? 0), 0),
+    prospectos_nuevos: prospectos.filter((p: any) => p.estado_crm === "nuevo").length,
+    clientes_activos: clientes.length,
+  };
 }
 
 async function getObrasActivas() {
