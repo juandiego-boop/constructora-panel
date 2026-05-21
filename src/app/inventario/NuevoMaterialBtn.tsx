@@ -13,10 +13,8 @@ const UNIDADES = ["kg", "ton", "m²", "m³", "ml", "unidad", "litros", "bolsa", 
 
 type InventarioItem = {
   id: string;
-  cantidad_actual: number;
-  stock_minimo: number;
-  precio_unitario?: number;
-  materiales?: { nombre: string; codigo?: string; unidad_medida: string };
+  cantidad_disponible: number;   // columna real en DB
+  materiales?: { nombre: string; codigo?: string; unidad_medida: string; stock_minimo?: number; precio_unitario_referencia?: number };
 };
 
 type Props = { inventario: InventarioItem[] };
@@ -113,9 +111,9 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
     const item = inventario.find(i => i.id === id);
     setFormAjuste({
       inventario_id:   id,
-      cantidad_actual: item ? String(item.cantidad_actual) : "",
-      stock_minimo:    item ? String(item.stock_minimo)    : "",
-      precio_unitario: item?.precio_unitario ? String(item.precio_unitario) : "",
+      cantidad_actual: item ? String(item.cantidad_disponible) : "",
+      stock_minimo:    item?.materiales?.stock_minimo ? String(item.materiales.stock_minimo) : "",
+      precio_unitario: item?.materiales?.precio_unitario_referencia ? String(item.materiales.precio_unitario_referencia) : "",
     });
   };
 
@@ -262,7 +260,7 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
                           <option key={item.id} value={item.id}>
                             {item.materiales?.codigo ? `[${item.materiales.codigo}] ` : ""}
                             {item.materiales?.nombre ?? item.id}
-                            {" "}— Stock actual: {item.cantidad_actual} {item.materiales?.unidad_medida}
+                            {" "}— Stock: {item.cantidad_disponible} {item.materiales?.unidad_medida}
                           </option>
                         ))}
                       </select>

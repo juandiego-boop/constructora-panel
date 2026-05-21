@@ -9,7 +9,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       nombre, codigo, categoria, unidad_medida, descripcion,
-      cantidad_actual, stock_minimo, precio_unitario, ubicacion,
+      cantidad_actual, cantidad_disponible, stock_minimo,
+      precio_unitario, precio_unitario_referencia, ubicacion,
     } = body;
 
     if (!nombre || !unidad_medida || !categoria) {
@@ -19,13 +20,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const materialInsert: Record<string, unknown> = {
-      nombre,
-      categoria,
-      unidad_medida,
-    };
+    // Insertar en materiales — stock_minimo y precio van aquí
+    const materialInsert: Record<string, unknown> = { nombre, categoria, unidad_medida };
     if (codigo)      materialInsert.codigo      = codigo;
     if (descripcion) materialInsert.descripcion = descripcion;
+    const stockMin = Number(stock_minimo ?? 0);
+    if (stockMin > 0) materialInsert.stock_minimo = stockMin;
+    const precioRef = Number(precio_unitario ?? precio_unitario_referencia ?? 0);
+    if (precioRef > 0) materialInsert.precio_unitario_referencia = precioRef;
 
     const { data: material, error: matError } = await supabase
       .from("materiales")
@@ -35,13 +37,13 @@ export async function POST(req: Request) {
 
     if (matError) return NextResponse.json({ error: matError.message }, { status: 500 });
 
+    // Insertar en inventario — columna real: cantidad_disponible
+    const cantidadReal = Number(cantidad_disponible ?? cantidad_actual ?? 0);
     const inventarioInsert: Record<string, unknown> = {
-      material_id:     material.id,
-      cantidad_actual: Number(cantidad_actual ?? 0),
-      stock_minimo:    Number(stock_minimo ?? 0),
+      material_id:         material.id,
+      cantidad_disponible: cantidadReal,
     };
-    if (precio_unitario) inventarioInsert.precio_unitario = Number(precio_unitario);
-    if (ubicacion)       inventarioInsert.ubicacion       = ubicacion;
+    if (ubicacion) inventarioInsert.ubicacion = ubicacion;
 
     const { data: inv, error: invError } = await supabase
       .from("inventario")
@@ -61,20 +63,21 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { inventario_id, cantidad_actual, stock_minimo, precio_unitario } = body;
+    const { inventario_id, cantidad_actual, cantidad_disponible } = body;
 
     if (!inventario_id) {
       return NextResponse.json({ error: "inventario_id es requerido" }, { status: 400 });
     }
 
-    const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (cantidad_actual !== undefined) update.cantidad_actual = Number(cantidad_actual);
-    if (stock_minimo    !== undefined) update.stock_minimo    = Number(stock_minimo);
-    if (precio_unitario !== undefined) update.precio_unitario = Number(precio_unitario);
+    // Aceptar cantidad_disponible o cantidad_actual (del formulario antiguo)
+    const nuevaCantidad = cantidad_disponible ?? cantidad_actual;
+    if (nuevaCantidad === undefined) {
+      return NextResponse.json({ error: "cantidad_disponible es requerida" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("inventario")
-      .update(update)
+      .update({ cantidad_disponible: Number(nuevaCantidad) })
       .eq("id", inventario_id)
       .select()
       .single();

@@ -9,11 +9,26 @@ import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Calendar, Package } 
 
 
 async function getPagosProximos() {
+  const hoy = new Date();
+  const menos30 = new Date(hoy); menos30.setDate(menos30.getDate() - 30);
+  const mas7    = new Date(hoy); mas7.setDate(mas7.getDate() + 7);
+
   const { data } = await supabase
-    .from("v_pagos_proximos")
-    .select("*")
+    .from("pagos")
+    .select("*, obras(nombre)")
+    .in("estado", ["pendiente", "vencido"])
+    .gte("fecha_vencimiento", menos30.toISOString().split("T")[0])
+    .lte("fecha_vencimiento", mas7.toISOString().split("T")[0])
     .order("fecha_vencimiento", { ascending: true });
-  return data ?? [];
+
+  // Calcular dias_para_vencer en runtime
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    obra_nombre: p.obras?.nombre ?? null,
+    dias_para_vencer: p.fecha_vencimiento
+      ? Math.round((new Date(p.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000)
+      : null,
+  }));
 }
 
 async function getFlujoCaja() {

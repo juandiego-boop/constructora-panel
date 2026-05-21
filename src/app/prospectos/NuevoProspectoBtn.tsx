@@ -17,41 +17,65 @@ export default function NuevoProspectoBtn() {
   });
   const router = useRouter();
 
+  const [error, setError] = useState("");
+
+  const payload = {
+    nombre:               form.nombre,
+    telefono:             form.telefono,
+    email:                form.email                || undefined,
+    ciudad:               form.ciudad               || undefined,
+    tipo_proyecto:        form.tipo_proyecto,
+    fuente:               form.fuente,
+    presupuesto_estimado: form.presupuesto_estimado ? Number(form.presupuesto_estimado) : undefined,
+    notas:                form.notas                || undefined,
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+
+    // 1. Intentar n8n primero (dispara automatizaciones)
+    const n8nUrl = `${process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n-n8n.g6kmjk.easypanel.host"}/webhook/captar-lead`;
+    let savedOk = false;
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n-n8n.g6kmjk.easypanel.host"}/webhook/captar-lead`,
-        {
+      const n8nRes = await fetch(n8nUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(6000), // 6s timeout
+      });
+      if (n8nRes.ok) savedOk = true;
+    } catch {
+      // n8n no disponible — continuar con fallback
+    }
+
+    // 2. Fallback directo a Supabase si n8n falló
+    if (!savedOk) {
+      try {
+        const apiRes = await fetch("/api/prospectos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nombre: form.nombre,
-            telefono: form.telefono,
-            email: form.email || undefined,
-            ciudad: form.ciudad || undefined,
-            tipo_proyecto: form.tipo_proyecto,
-            fuente: form.fuente,
-            presupuesto_estimado: form.presupuesto_estimado
-              ? Number(form.presupuesto_estimado)
-              : undefined,
-            notas: form.notas || undefined,
-          }),
+          body: JSON.stringify(payload),
+        });
+        const json = await apiRes.json();
+        if (apiRes.ok) {
+          savedOk = true;
+        } else {
+          setError(json.error ?? "Error al guardar prospecto.");
         }
-      );
-      if (res.ok) {
-        setOpen(false);
-        setForm({ nombre: "", telefono: "", email: "", ciudad: "", tipo_proyecto: "casa_nueva", fuente: "web", presupuesto_estimado: "", notas: "" });
-        router.refresh();
-      } else {
-        alert("Error al guardar prospecto. Revisa la consola.");
+      } catch {
+        setError("No se pudo conectar con el servidor.");
       }
-    } catch {
-      alert("No se pudo conectar con el servidor.");
-    } finally {
-      setLoading(false);
     }
+
+    if (savedOk) {
+      setOpen(false);
+      setForm({ nombre: "", telefono: "", email: "", ciudad: "", tipo_proyecto: "casa_nueva", fuente: "web", presupuesto_estimado: "", notas: "" });
+      router.refresh();
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -74,6 +98,11 @@ export default function NuevoProspectoBtn() {
             </div>
 
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg">
+                  {error}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-gray-600 mb-1">
