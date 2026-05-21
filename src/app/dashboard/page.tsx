@@ -125,13 +125,13 @@ export default async function DashboardPage() {
             ) : obras.map((o: any) => {
               const avance = o.avance_porcentaje ?? 0;
               const pct = o.presupuesto_total > 0
-                ? Math.round((o.total_gastos / o.presupuesto_total) * 100)
+                ? Math.round((o.costo_ejecutado / o.presupuesto_total) * 100)
                 : 0;
               return (
                 <div key={o.id} className="px-5 py-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-medium text-gray-800 text-sm">{o.nombre_obra}</p>
+                      <p className="font-medium text-gray-800 text-sm">{o.nombre}</p>
                       <p className="text-xs text-gray-400">{o.ciudad ?? ""}</p>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
                     />
                   </div>
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>Gastado: {formatPeso(o.total_gastos)}</span>
+                    <span>Gastado: {formatPeso(o.costo_ejecutado)}</span>
                     <span className={pct > 90 ? "text-red-500 font-semibold" : ""}>
                       {pct}% del presupuesto
                     </span>

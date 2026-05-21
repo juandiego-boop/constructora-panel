@@ -12,7 +12,7 @@ async function getObras() {
   const { data } = await supabase
     .from("v_dashboard_obras")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("nombre", { ascending: true });
   return data ?? [];
 }
 
@@ -70,11 +70,11 @@ export default async function ObrasPage() {
           </div>
         ) : obras.map((o: any) => {
           const avance = o.avance_porcentaje ?? 0;
-          const gastado = o.total_gastos ?? 0;
+          const gastado = o.costo_ejecutado ?? 0;
           const presupuesto = o.presupuesto_total ?? 0;
           const pctGasto = presupuesto > 0 ? Math.round((gastado / presupuesto) * 100) : 0;
           const enRiesgo = pctGasto > 90 && avance < 90;
-          const utilidad = utilidades[o.id] ?? utilidades[o.nombre_obra];
+          const utilidad = utilidades[o.id] ?? utilidades[o.nombre];
 
           return (
             <div key={o.id} className={`bg-white rounded-xl border shadow-sm overflow-hidden ${enRiesgo ? "border-red-200" : "border-gray-100"}`}>
@@ -84,7 +84,7 @@ export default async function ObrasPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <HardHat className="w-4 h-4 text-[#1a5276]" />
-                      <h3 className="font-semibold text-gray-900">{o.nombre_obra}</h3>
+                      <h3 className="font-semibold text-gray-900">{o.nombre}</h3>
                       {enRiesgo && (
                         <AlertTriangle className="w-4 h-4 text-red-500" aria-label="Presupuesto en riesgo" />
                       )}
