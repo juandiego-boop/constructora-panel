@@ -54,7 +54,7 @@ async function getTareas(obraId: string) {
 async function getGastos(obraId: string) {
   const { data } = await supabase
     .from("gastos")
-    .select("id, categoria, descripcion, valor, fecha_gasto, proveedor")
+    .select("id, categoria, descripcion, valor, fecha_gasto, proveedores(nombre)")
     .eq("obra_id", obraId)
     .order("fecha_gasto", { ascending: false })
     .limit(20);
@@ -246,7 +246,7 @@ export default async function ObraDetallePage({ params }: Props) {
                     <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium capitalize">
                       {g.categoria?.replace(/_/g, " ")}
                     </span>
-                    {g.proveedor && <span className="text-xs text-gray-400">{g.proveedor}</span>}
+                    {g.proveedores?.nombre && <span className="text-xs text-gray-400">{g.proveedores.nombre}</span>}
                   </div>
                 </div>
                 <div className="text-right">
