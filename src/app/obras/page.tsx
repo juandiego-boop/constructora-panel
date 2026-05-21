@@ -4,6 +4,7 @@ import { supabase, formatPeso, formatFecha } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge, { estadoObraVariant } from "@/components/Badge";
 import NuevaObraBtn from "./NuevaObraBtn";
+import ObraActionsBtn from "./ObraActionsBtn";
 import { HardHat, MapPin, Calendar, TrendingUp, AlertTriangle } from "lucide-react";
 
 
@@ -94,9 +95,16 @@ export default async function ObrasPage() {
                       {o.codigo_obra && <span className="font-mono">{o.codigo_obra}</span>}
                     </div>
                   </div>
-                  <Badge variant={estadoObraVariant[o.estado] ?? "gray"}>
-                    {ESTADO_LABELS[o.estado] ?? o.estado}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={estadoObraVariant[o.estado] ?? "gray"}>
+                      {ESTADO_LABELS[o.estado] ?? o.estado}
+                    </Badge>
+                    <ObraActionsBtn
+                      obraId={o.id}
+                      obraEstado={o.estado}
+                      obraAvance={o.avance_porcentaje ?? 0}
+                    />
+                  </div>
                 </div>
               </div>
 
