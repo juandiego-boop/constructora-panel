@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 const FILTROS = [
   { label: "Todas", value: "" },
@@ -11,22 +9,13 @@ const FILTROS = [
   { label: "Canceladas", value: "cancelada" },
 ];
 
-export default function ObrasFilterTabs() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const current = params.get("estado") ?? "";
-
-  function setFiltro(val: string) {
-    const url = val ? `/obras?estado=${val}` : "/obras";
-    router.push(url);
-  }
-
+export default function ObrasFilterTabs({ current }: { current: string }) {
   return (
     <div className="flex gap-1.5 flex-wrap mb-5">
       {FILTROS.map(f => (
-        <button
+        <Link
           key={f.value}
-          onClick={() => setFiltro(f.value)}
+          href={f.value ? `/obras?estado=${f.value}` : "/obras"}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
             current === f.value
               ? "bg-[#1a5276] text-white border-[#1a5276] shadow-sm"
@@ -34,7 +23,7 @@ export default function ObrasFilterTabs() {
           }`}
         >
           {f.label}
-        </button>
+        </Link>
       ))}
     </div>
   );

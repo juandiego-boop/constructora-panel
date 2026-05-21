@@ -7,7 +7,6 @@ import NuevaObraBtn from "./NuevaObraBtn";
 import ObraActionsBtn from "./ObraActionsBtn";
 import ObrasFilterTabs from "./ObrasFilterTabs";
 import { HardHat, MapPin, Calendar, TrendingUp, AlertTriangle, ExternalLink } from "lucide-react";
-import { Suspense } from "react";
 import Link from "next/link";
 
 async function getObras(estado?: string) {
@@ -15,7 +14,10 @@ async function getObras(estado?: string) {
     .from("v_dashboard_obras")
     .select("*")
     .order("nombre", { ascending: true });
-  if (estado) query = (query as any).eq("estado", estado);
+  if (estado) {
+    const { data } = await (query as any).eq("estado", estado);
+    return data ?? [];
+  }
   const { data } = await query;
   return data ?? [];
 }
@@ -38,11 +40,17 @@ const ESTADO_LABELS: Record<string, string> = {
 type Props = { searchParams: { estado?: string } };
 
 export default async function ObrasPage({ searchParams }: Props) {
-  const estadoFilter = searchParams.estado;
-  const [obras, utilidades] = await Promise.all([getObras(estadoFilter), getUtilidadObras()]);
+  const estadoFilter = searchParams?.estado ?? "";
 
-  // Totales siempre sobre todas las obras
-  const [todasObras] = await Promise.all([getObras()]);
+  const [todasObras, utilidades] = await Promise.all([
+    getObras(),
+    getUtilidadObras(),
+  ]);
+
+  const obras = estadoFilter
+    ? todasObras.filter((o: any) => o.estado === estadoFilter)
+    : todasObras;
+
   const activas     = todasObras.filter((o: any) => o.estado === "en_ejecucion").length;
   const enPausa     = todasObras.filter((o: any) => o.estado === "pausada").length;
   const finalizadas = todasObras.filter((o: any) => o.estado === "finalizada").length;
@@ -71,10 +79,8 @@ export default async function ObrasPage({ searchParams }: Props) {
         ))}
       </div>
 
-      {/* Filtros */}
-      <Suspense fallback={null}>
-        <ObrasFilterTabs />
-      </Suspense>
+      {/* Filtros — server component, no hooks */}
+      <ObrasFilterTabs current={estadoFilter} />
 
       {/* Cards de obras */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -92,7 +98,7 @@ export default async function ObrasPage({ searchParams }: Props) {
 
           return (
             <div key={o.id} className={`bg-white rounded-xl border shadow-sm overflow-hidden ${enRiesgo ? "border-red-200" : "border-gray-100"}`}>
-              {/* Header de la card */}
+              {/* Header */}
               <div className="px-5 py-4 border-b border-gray-50">
                 <div className="flex items-start justify-between">
                   <div>
@@ -101,9 +107,7 @@ export default async function ObrasPage({ searchParams }: Props) {
                       <Link href={`/obras/${o.id}`} className="font-semibold text-gray-900 hover:text-[#1a5276] hover:underline transition-colors">
                         {o.nombre}
                       </Link>
-                      {enRiesgo && (
-                        <AlertTriangle className="w-4 h-4 text-red-500" aria-label="Presupuesto en riesgo" />
-                      )}
+                      {enRiesgo && <AlertTriangle className="w-4 h-4 text-red-500" />}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                       {o.ciudad && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{o.ciudad}</span>}
@@ -114,32 +118,22 @@ export default async function ObrasPage({ searchParams }: Props) {
                     <Badge variant={estadoObraVariant[o.estado] ?? "gray"}>
                       {ESTADO_LABELS[o.estado] ?? o.estado}
                     </Badge>
-                    <ObraActionsBtn
-                      obraId={o.id}
-                      obraEstado={o.estado}
-                      obraAvance={o.avance_porcentaje ?? 0}
-                    />
+                    <ObraActionsBtn obraId={o.id} obraEstado={o.estado} obraAvance={avance} />
                   </div>
                 </div>
               </div>
 
               {/* Cuerpo */}
               <div className="px-5 py-4 space-y-4">
-                {/* Barra de avance físico */}
                 <div>
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span className="font-medium">Avance físico</span>
                     <span className="font-bold text-[#1a5276]">{avance}%</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-3">
-                    <div
-                      className="h-3 rounded-full bg-[#1a5276] transition-all"
-                      style={{ width: `${avance}%` }}
-                    />
+                    <div className="h-3 rounded-full bg-[#1a5276] transition-all" style={{ width: `${avance}%` }} />
                   </div>
                 </div>
-
-                {/* Barra presupuestal */}
                 <div>
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span className="font-medium">Ejecución presupuestal</span>
@@ -152,8 +146,6 @@ export default async function ObrasPage({ searchParams }: Props) {
                     />
                   </div>
                 </div>
-
-                {/* Cifras */}
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-gray-50 rounded-lg p-2">
                     <p className="text-xs text-gray-400 mb-0.5">Presupuesto</p>
@@ -170,8 +162,6 @@ export default async function ObrasPage({ searchParams }: Props) {
                     </p>
                   </div>
                 </div>
-
-                {/* Fechas + link detalle */}
                 <div className="flex items-center justify-between">
                   <div className="flex gap-4 text-xs text-gray-400">
                     {o.fecha_inicio && (
@@ -185,10 +175,7 @@ export default async function ObrasPage({ searchParams }: Props) {
                       </span>
                     )}
                   </div>
-                  <Link
-                    href={`/obras/${o.id}`}
-                    className="flex items-center gap-1 text-xs text-[#1a5276] hover:underline font-medium"
-                  >
+                  <Link href={`/obras/${o.id}`} className="flex items-center gap-1 text-xs text-[#1a5276] hover:underline font-medium">
                     Ver detalle <ExternalLink className="w-3 h-3" />
                   </Link>
                 </div>
