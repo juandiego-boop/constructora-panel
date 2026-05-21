@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, ReactNode } from "react";
 import { MoreVertical, Play, Pause, CheckCircle, XCircle, TrendingUp, Loader2 } from "lucide-react";
 
 type Estado = "planificacion" | "en_ejecucion" | "pausada" | "finalizada" | "cancelada";
@@ -82,7 +82,7 @@ export default function ObraActionsBtn({ obraId, obraEstado, obraAvance }: Props
         if (confirm("¿Seguro que quieres cancelar esta obra?")) cambiarEstado("cancelada");
       },
     },
-  ].filter(Boolean) as { label: string; icon: JSX.Element; onClick: () => void }[];
+  ].filter(Boolean) as { label: string; icon: ReactNode; onClick: () => void }[];
 
   return (
     <div className="relative" ref={menuRef}>
