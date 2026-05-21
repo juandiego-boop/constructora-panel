@@ -56,7 +56,7 @@ async function getGastos(obraId: string) {
     .from("gastos")
     .select("id, categoria, descripcion, valor, fecha_gasto")
     .eq("obra_id", obraId)
-    .order("created_at", { ascending: false })
+    .order("fecha_gasto", { ascending: false })
     .limit(20);
   return data ?? [];
 }

@@ -29,8 +29,10 @@ async function getFlujoCaja() {
 async function getGastosRecientes() {
   const { data } = await supabase
     .from("gastos")
-    .select("*");
-  return (data ?? []).slice(0, 15);
+    .select("id, categoria, descripcion, valor, fecha_gasto, obra_id")
+    .order("fecha_gasto", { ascending: false })
+    .limit(15);
+  return data ?? [];
 }
 
 async function getResumenFinanciero() {
