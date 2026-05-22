@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
 // Schema real obras: codigo_obra (NOT NULL), nombre, estado, ciudad, direccion,
-// descripcion, tipo_obra, fecha_inicio_plan, fecha_fin_plan,
+// notas (descripcion), tipo_obra, fecha_inicio_plan, fecha_fin_plan,
 // presupuesto_total, avance_porcentaje
 
 function generarCodigo(): string {
@@ -16,11 +16,13 @@ function generarCodigo(): string {
 export async function GET() {
   const { data, error } = await supabase
     .from("obras")
-    .select("id, nombre, codigo_obra, estado, avance_porcentaje, presupuesto_total, ciudad, direccion, fecha_inicio_plan, fecha_fin_plan, tipo_obra, descripcion, created_at")
+    .select("id, nombre, codigo_obra, estado, avance_porcentaje, presupuesto_total, ciudad, direccion, fecha_inicio_plan, fecha_fin_plan, tipo_obra, notas, created_at")
     .not("estado", "eq", "cancelada")
     .order("nombre");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  // Map notas -> descripcion for frontend compatibility
+  const mapped = (data ?? []).map((o: any) => ({ ...o, descripcion: o.notas }));
+  return NextResponse.json(mapped);
 }
 
 export async function POST(req: Request) {
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
     const {
       nombre_obra, nombre, codigo_obra,
       ciudad, direccion, estado, tipo_obra,
-      descripcion,
+      descripcion, notas,
       presupuesto_total, fecha_inicio, fecha_inicio_plan,
       fecha_fin_estimada, fecha_fin_plan,
     } = body;
@@ -49,7 +51,9 @@ export async function POST(req: Request) {
     if (ciudad)            insert.ciudad            = ciudad;
     if (direccion)         insert.direccion         = direccion;
     if (tipo_obra)         insert.tipo_obra         = tipo_obra;
-    if (descripcion)       insert.descripcion       = descripcion;
+    // Accept both notas and descripcion from frontend
+    const notasVal = notas || descripcion;
+    if (notasVal)          insert.notas             = notasVal;
     if (presupuesto_total) insert.presupuesto_total = Number(presupuesto_total);
 
     const fechaInicio = fecha_inicio_plan || fecha_inicio;
@@ -59,7 +63,8 @@ export async function POST(req: Request) {
 
     const { data, error } = await supabase.from("obras").insert([insert]).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data, { status: 201 });
+    // Map notas -> descripcion
+    return NextResponse.json({ ...data, descripcion: (data as any).notas }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
