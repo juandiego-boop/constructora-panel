@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Badge from "@/components/Badge";
-import AccionesTareaBtn from "./AccionesTareaBtn";
+import AccionesTareaBtn, { type Tarea } from "./AccionesTareaBtn";
 
 const ESTADO_VARIANT: Record<string, string> = {
   pendiente:   "yellow",
@@ -17,19 +17,13 @@ const PRIORIDAD_ORDER: Record<string, number> = {
   critica: 0, alta: 1, media: 2, baja: 3,
 };
 
-type Tarea = {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  estado: string;
+type TareaRow = Tarea & {
   prioridad: string;
-  fecha_fin_plan?: string;
-  porcentaje_avance?: number;
   obras?: { nombre: string; codigo_obra?: string } | null;
 };
 
 type Props = {
-  tareas: Tarea[];
+  tareas: TareaRow[];
   vencidasIds: string[];
 };
 
@@ -47,10 +41,28 @@ function formatFecha(fecha?: string) {
   return new Date(fecha + "T00:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function FiltrosTareas({ tareas, vencidasIds }: Props) {
+export default function FiltrosTareas({ tareas: tareasInicial, vencidasIds: _vencidasIniciales }: Props) {
+  const [tareas, setTareas] = useState<TareaRow[]>(tareasInicial);
   const [filtro, setFiltro] = useState("todas");
   const [busqueda, setBusqueda] = useState("");
+
+  // Calcula vencidas localmente (sin depender del servidor)
+  const hoy = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+  const vencidasIds = useMemo(() =>
+    tareas.filter(t => {
+      if (t.estado === "completada" || !t.fecha_fin_plan) return false;
+      return new Date(t.fecha_fin_plan + "T00:00:00") < hoy;
+    }).map(t => t.id),
+    [tareas, hoy]
+  );
   const vSet = new Set(vencidasIds);
+
+  const handleUpdate = (id: string, changes: Partial<TareaRow>) => {
+    setTareas(prev => prev.map(t => t.id === id ? { ...t, ...changes } : t));
+  };
+  const handleDelete = (id: string) => {
+    setTareas(prev => prev.filter(t => t.id !== id));
+  };
 
   const tareasFiltradas = useMemo(() => {
     let lista = tareas;
@@ -81,14 +93,14 @@ export default function FiltrosTareas({ tareas, vencidasIds }: Props) {
     });
   }, [tareas, filtro, busqueda, vencidasIds]);
 
-  const counts: Record<string, number> = {
+  const counts: Record<string, number> = useMemo(() => ({
     todas:       tareas.length,
     pendiente:   tareas.filter(t => t.estado === "pendiente").length,
     en_progreso: tareas.filter(t => t.estado === "en_progreso").length,
     bloqueada:   tareas.filter(t => t.estado === "bloqueada").length,
     vencidas:    vencidasIds.length,
     completada:  tareas.filter(t => t.estado === "completada").length,
-  };
+  }), [tareas, vencidasIds]);
 
   return (
     <div>
@@ -209,7 +221,7 @@ export default function FiltrosTareas({ tareas, vencidasIds }: Props) {
                       </Badge>
                     </td>
                     <td className="px-4 py-3.5">
-                      <AccionesTareaBtn tarea={t} />
+                      <AccionesTareaBtn tarea={t} onUpdate={handleUpdate} onDelete={handleDelete} />
                     </td>
                   </tr>
                 );

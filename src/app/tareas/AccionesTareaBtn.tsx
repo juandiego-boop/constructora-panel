@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   CheckCircle2, PlayCircle, XCircle, RotateCcw,
   Trash2, ChevronDown, Loader2, Pencil, X, Save,
@@ -9,12 +8,13 @@ import {
 
 type Estado = "pendiente" | "en_progreso" | "bloqueada" | "completada";
 
-type Tarea = {
+export type Tarea = {
   id: string;
   nombre: string;
   descripcion?: string;
   estado: string;
   fecha_fin_plan?: string;
+  fecha_fin_real?: string;
   porcentaje_avance?: number;
 };
 
@@ -40,7 +40,13 @@ const TRANSICIONES: Record<string, { value: Estado; label: string; icon: React.R
 
 const field = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a5276]/30 focus:border-[#1a5276]";
 
-export default function AccionesTareaBtn({ tarea }: { tarea: Tarea }) {
+type Props = {
+  tarea: Tarea;
+  onUpdate: (id: string, changes: Partial<Tarea>) => void;
+  onDelete: (id: string) => void;
+};
+
+export default function AccionesTareaBtn({ tarea, onUpdate, onDelete }: Props) {
   const [open, setOpen]         = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading]   = useState(false);
@@ -50,17 +56,20 @@ export default function AccionesTareaBtn({ tarea }: { tarea: Tarea }) {
     fecha_fin_plan:    tarea.fecha_fin_plan   ?? "",
     porcentaje_avance: String(tarea.porcentaje_avance ?? 0),
   });
-  const router = useRouter();
 
   const patch = async (body: Record<string, unknown>) => {
     setLoading(true);
+    setOpen(false);
     try {
-      await fetch(`/api/tareas/${tarea.id}`, {
+      const res = await fetch(`/api/tareas/${tarea.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      router.refresh();
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdate(tarea.id, updated);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,8 +80,8 @@ export default function AccionesTareaBtn({ tarea }: { tarea: Tarea }) {
     setOpen(false);
     setLoading(true);
     try {
-      await fetch(`/api/tareas/${tarea.id}`, { method: "DELETE" });
-      router.refresh();
+      const res = await fetch(`/api/tareas/${tarea.id}`, { method: "DELETE" });
+      if (res.ok) onDelete(tarea.id);
     } finally {
       setLoading(false);
     }
