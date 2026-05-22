@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
-// Schema real obras: codigo_obra (NOT NULL), nombre, estado, ciudad,
-// fecha_inicio_plan, fecha_fin_plan, presupuesto_total, avance_porcentaje, tipo_obra
+// Schema real obras: codigo_obra (NOT NULL), nombre, estado, ciudad, direccion,
+// descripcion, tipo_obra, fecha_inicio_plan, fecha_fin_plan,
+// presupuesto_total, avance_porcentaje
 
 function generarCodigo(): string {
   const year = new Date().getFullYear();
@@ -15,7 +16,7 @@ function generarCodigo(): string {
 export async function GET() {
   const { data, error } = await supabase
     .from("obras")
-    .select("id, nombre, codigo_obra")
+    .select("id, nombre, codigo_obra, estado, avance_porcentaje, presupuesto_total, ciudad, direccion, fecha_inicio_plan, fecha_fin_plan, tipo_obra, descripcion, created_at")
     .not("estado", "eq", "cancelada")
     .order("nombre");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     const {
       nombre_obra, nombre, codigo_obra,
       ciudad, direccion, estado, tipo_obra,
+      descripcion,
       presupuesto_total, fecha_inicio, fecha_inicio_plan,
       fecha_fin_estimada, fecha_fin_plan,
     } = body;
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
     if (ciudad)            insert.ciudad            = ciudad;
     if (direccion)         insert.direccion         = direccion;
     if (tipo_obra)         insert.tipo_obra         = tipo_obra;
+    if (descripcion)       insert.descripcion       = descripcion;
     if (presupuesto_total) insert.presupuesto_total = Number(presupuesto_total);
 
     const fechaInicio = fecha_inicio_plan || fecha_inicio;
