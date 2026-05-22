@@ -7,45 +7,58 @@ import ObraActionsBtn from "../ObraActionsBtn";
 import { notFound } from "next/navigation";
 import {
   HardHat, MapPin, Calendar, TrendingUp, AlertTriangle,
-  DollarSign, CheckSquare, Package, ArrowLeft, User,
+  DollarSign, CheckSquare, Package, ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 
 const ESTADO_LABELS: Record<string, string> = {
   planificacion: "Planificación",
-  en_ejecucion: "En ejecución",
-  pausada: "En pausa",
-  finalizada: "Finalizada",
-  cancelada: "Cancelada",
+  en_ejecucion:  "En ejecución",
+  pausada:       "En pausa",
+  finalizada:    "Finalizada",
+  cancelada:     "Cancelada",
 };
 
 const ESTADO_TAREA: Record<string, string> = {
-  pendiente: "Pendiente",
+  pendiente:   "Pendiente",
   en_progreso: "En progreso",
-  completada: "Completada",
-  bloqueada: "Bloqueada",
+  completada:  "Completada",
+  bloqueada:   "Bloqueada",
 };
 
 const TAREA_COLOR: Record<string, string> = {
-  pendiente: "bg-gray-100 text-gray-600",
+  pendiente:   "bg-gray-100 text-gray-600",
   en_progreso: "bg-blue-100 text-blue-700",
-  completada: "bg-green-100 text-green-700",
-  bloqueada: "bg-red-100 text-red-700",
+  completada:  "bg-green-100 text-green-700",
+  bloqueada:   "bg-red-100 text-red-700",
 };
 
 async function getObra(id: string) {
-  const { data } = await supabase
-    .from("v_dashboard_obras")
-    .select("*")
+  // Lee directamente de la tabla obras — no depende de vistas que filtran por cliente
+  const { data, error } = await supabase
+    .from("obras")
+    .select(
+      "id, codigo_obra, nombre, estado, avance_porcentaje, presupuesto_total, " +
+      "ciudad, direccion, fecha_inicio_plan, fecha_fin_plan, tipo_obra, descripcion, created_at"
+    )
     .eq("id", id)
     .single();
+  if (error) console.error("[obras/[id]] getObra error:", error.message);
   return data;
+}
+
+async function getCostoEjecutado(obraId: string): Promise<number> {
+  const { data } = await supabase
+    .from("gastos")
+    .select("valor")
+    .eq("obra_id", obraId);
+  return (data ?? []).reduce((s: number, g: any) => s + (g.valor ?? 0), 0);
 }
 
 async function getTareas(obraId: string) {
   const { data } = await supabase
     .from("tareas")
-    .select("id, nombre, descripcion, estado, prioridad, fecha_inicio_plan, fecha_fin_plan")
+    .select("id, nombre, descripcion, estado, prioridad, fecha_inicio_plan, fecha_fin_plan, porcentaje_avance")
     .eq("obra_id", obraId)
     .order("fecha_fin_plan", { ascending: true });
   return data ?? [];
@@ -61,36 +74,25 @@ async function getGastos(obraId: string) {
   return data ?? [];
 }
 
-async function getMateriales(obraId: string) {
-  const { data } = await supabase
-    .from("inventario")
-    .select("id, nombre, cantidad, unidad, stock_minimo")
-    .eq("obra_id", obraId)
-    .order("nombre", { ascending: true });
-  return data ?? [];
-}
-
 type Props = { params: { id: string } };
 
 export default async function ObraDetallePage({ params }: Props) {
-  const [obra, tareas, gastos, materiales] = await Promise.all([
+  const [obra, tareas, gastos, costoEjecutado] = await Promise.all([
     getObra(params.id),
     getTareas(params.id),
     getGastos(params.id),
-    getMateriales(params.id),
+    getCostoEjecutado(params.id),
   ]);
 
   if (!obra) notFound();
 
-  const avance = obra.avance_porcentaje ?? 0;
-  const gastado = obra.costo_ejecutado ?? 0;
+  const avance      = obra.avance_porcentaje ?? 0;
   const presupuesto = obra.presupuesto_total ?? 0;
-  const pctGasto = presupuesto > 0 ? Math.round((gastado / presupuesto) * 100) : 0;
-  const enRiesgo = pctGasto > 90 && avance < 90;
+  const gastado     = costoEjecutado;
+  const pctGasto    = presupuesto > 0 ? Math.round((gastado / presupuesto) * 100) : 0;
+  const enRiesgo    = pctGasto > 90 && avance < 90;
 
   const tareasCompletadas = tareas.filter((t: any) => t.estado === "completada").length;
-  const totalGastos = gastos.reduce((s: number, g: any) => s + (g.valor ?? 0), 0);
-  const stockBajo = materiales.filter((m: any) => (m.cantidad ?? 0) <= (m.stock_minimo ?? 0));
 
   return (
     <div>
@@ -109,6 +111,7 @@ export default async function ObraDetallePage({ params }: Props) {
             obraId={obra.id}
             obraEstado={obra.estado}
             obraAvance={avance}
+            obraData={obra}
           />
         }
       />
@@ -123,12 +126,14 @@ export default async function ObraDetallePage({ params }: Props) {
             <AlertTriangle className="w-4 h-4" /> Presupuesto en riesgo
           </span>
         )}
-        {stockBajo.length > 0 && (
-          <span className="flex items-center gap-1.5 text-sm text-orange-600 font-medium">
-            <Package className="w-4 h-4" /> {stockBajo.length} materiales bajo stock
-          </span>
-        )}
       </div>
+
+      {/* Descripción */}
+      {obra.descripcion && (
+        <p className="text-sm text-gray-500 mb-5 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+          {obra.descripcion}
+        </p>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -162,24 +167,24 @@ export default async function ObraDetallePage({ params }: Props) {
       </div>
 
       {/* Fechas */}
-      {(obra.fecha_inicio || obra.fecha_fin_estimada || obra.fecha_fin_real) && (
+      {(obra.fecha_inicio_plan || obra.fecha_fin_plan) && (
         <div className="flex gap-6 mb-6 text-sm text-gray-500">
-          {obra.fecha_inicio && (
+          {obra.fecha_inicio_plan && (
             <span className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-[#1a5276]" />
-              Inicio: <strong>{formatFecha(obra.fecha_inicio)}</strong>
+              Inicio: <strong>{formatFecha(obra.fecha_inicio_plan)}</strong>
             </span>
           )}
-          {obra.fecha_fin_estimada && (
+          {obra.fecha_fin_plan && (
             <span className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-500" />
-              Fin estimado: <strong>{formatFecha(obra.fecha_fin_estimada)}</strong>
+              Fin estimado: <strong>{formatFecha(obra.fecha_fin_plan)}</strong>
             </span>
           )}
-          {obra.fecha_fin_real && (
+          {obra.ciudad && (
             <span className="flex items-center gap-1.5">
-              <CheckSquare className="w-4 h-4 text-green-500" />
-              Fin real: <strong>{formatFecha(obra.fecha_fin_real)}</strong>
+              <MapPin className="w-4 h-4 text-gray-400" />
+              {obra.ciudad}
             </span>
           )}
         </div>
@@ -211,9 +216,11 @@ export default async function ObraDetallePage({ params }: Props) {
                 </div>
                 {t.prioridad && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
-                    t.prioridad === "alta" ? "bg-red-100 text-red-600" :
-                    t.prioridad === "media" ? "bg-yellow-100 text-yellow-700" :
-                    "bg-gray-100 text-gray-500"
+                    t.prioridad === "alta" || t.prioridad === "critica"
+                      ? "bg-red-100 text-red-600"
+                      : t.prioridad === "media"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-gray-100 text-gray-500"
                   }`}>
                     {t.prioridad}
                   </span>
@@ -227,8 +234,8 @@ export default async function ObraDetallePage({ params }: Props) {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-[#1a5276]" />
-            <h2 className="font-semibold text-gray-800">Gastos</h2>
-            <span className="ml-auto text-xs font-semibold text-gray-700">{formatPeso(totalGastos)}</span>
+            <h2 className="font-semibold text-gray-800">Gastos recientes</h2>
+            <span className="ml-auto text-xs font-semibold text-gray-700">{formatPeso(gastado)}</span>
           </div>
           <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
             {gastos.length === 0 ? (
@@ -237,12 +244,9 @@ export default async function ObraDetallePage({ params }: Props) {
               <div key={g.id} className="px-5 py-3 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{g.descripcion}</p>
-                  <div className="flex gap-2 mt-0.5">
-                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium capitalize">
-                      {g.categoria?.replace(/_/g, " ")}
-                    </span>
-                    {g.proveedor && <span className="text-xs text-gray-400">{g.proveedor}</span>}
-                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium capitalize">
+                    {g.categoria?.replace(/_/g, " ")}
+                  </span>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-gray-800">{formatPeso(g.valor)}</p>
@@ -252,54 +256,7 @@ export default async function ObraDetallePage({ params }: Props) {
             ))}
           </div>
         </div>
-
-        {/* Materiales / Inventario */}
-        {materiales.length > 0 && (
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#1a5276]" />
-              <h2 className="font-semibold text-gray-800">Materiales / Inventario</h2>
-              {stockBajo.length > 0 && (
-                <span className="ml-auto text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">
-                  {stockBajo.length} bajo stock
-                </span>
-              )}
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    <th className="px-5 py-3">Material</th>
-                    <th className="px-4 py-3 text-right">Cantidad</th>
-                    <th className="px-4 py-3">Unidad</th>
-                    <th className="px-4 py-3 text-right">Stock mín.</th>
-                    <th className="px-4 py-3">Estado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {materiales.map((m: any) => {
-                    const bajo = (m.cantidad ?? 0) <= (m.stock_minimo ?? 0);
-                    return (
-                      <tr key={m.id} className={bajo ? "bg-orange-50/50" : "hover:bg-gray-50/50"}>
-                        <td className="px-5 py-2.5 font-medium text-gray-800">{m.nombre}</td>
-                        <td className="px-4 py-2.5 text-right font-semibold">{m.cantidad}</td>
-                        <td className="px-4 py-2.5 text-gray-400 text-xs">{m.unidad}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-400 text-xs">{m.stock_minimo ?? "—"}</td>
-                        <td className="px-4 py-2.5">
-                          {bajo
-                            ? <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">Bajo stock</span>
-                            : <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">OK</span>
-                          }
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
-}
+    }
