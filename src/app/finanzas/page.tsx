@@ -47,6 +47,7 @@ async function getGastosRecientes() {
     .from("gastos")
     .select("id, categoria, descripcion, valor, fecha_gasto, obra_id, obras(nombre)")
     .order("fecha_gasto", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(20);
   return data ?? [];
 }

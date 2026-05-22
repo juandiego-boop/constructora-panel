@@ -6,21 +6,21 @@ const SECRET = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "constructora-panel-secret-key-2024"
 );
 
-// Rutas públicas — no requieren autenticación
-const PUBLIC = ["/login", "/api/auth/login"];
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Pasar rutas públicas y assets
+  // Dejar pasar: assets, rutas de auth y TODAS las rutas /api/*
+  // Las APIs son internas — no necesitan protección de middleware
   if (
-    PUBLIC.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/login")
   ) {
     return NextResponse.next();
   }
 
+  // Solo proteger páginas HTML
   const token = req.cookies.get("auth-token")?.value;
 
   if (!token) {
@@ -43,5 +43,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Solo corre en páginas, no en assets ni API
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 };
