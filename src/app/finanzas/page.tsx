@@ -4,6 +4,7 @@ import { supabase, formatPeso, formatFecha } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import Badge, { estadoPagoVariant } from "@/components/Badge";
 import NuevoGastoBtn from "./NuevoGastoBtn";
+import EliminarGastoBtn from "./EliminarGastoBtn";
 import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Calendar, Package } from "lucide-react";
 
 
@@ -44,9 +45,9 @@ async function getFlujoCaja() {
 async function getGastosRecientes() {
   const { data } = await supabase
     .from("gastos")
-    .select("id, categoria, descripcion, valor, fecha_gasto, obra_id")
+    .select("id, categoria, descripcion, valor, fecha_gasto, obra_id, obras(nombre)")
     .order("fecha_gasto", { ascending: false })
-    .limit(15);
+    .limit(20);
   return data ?? [];
 }
 
@@ -300,14 +301,15 @@ export default async function FinanzasPage() {
                 <th className="px-5 py-3">Fecha</th>
                 <th className="px-4 py-3">Categoría</th>
                 <th className="px-4 py-3">Descripción</th>
-                <th className="px-4 py-3">Proveedor</th>
+                <th className="px-4 py-3">Obra</th>
                 <th className="px-4 py-3 text-right">Valor</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {gastos.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-gray-400">
+                  <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
                     Sin gastos registrados
                   </td>
                 </tr>
@@ -322,9 +324,14 @@ export default async function FinanzasPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-700">{g.descripcion}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">—</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">
+                    {g.obras?.nombre ?? "—"}
+                  </td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800">
                     {formatPeso(g.valor)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <EliminarGastoBtn gastoId={g.id} />
                   </td>
                 </tr>
               ))}

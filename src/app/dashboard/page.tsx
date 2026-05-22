@@ -6,7 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import Badge, { estadoObraVariant, estadoProspectoVariant } from "@/components/Badge";
 import {
   HardHat, Users, DollarSign, TrendingUp,
-  AlertTriangle, CheckCircle, Package, Calendar,
+  AlertTriangle, CheckCircle, Package, Calendar, ClipboardList,
 } from "lucide-react";
 
  // refresca cada 60s
@@ -53,11 +53,33 @@ async function getProspectosRecientes() {
 }
 
 async function getPagosProximos() {
+  const hoy = new Date();
+  const mas7 = new Date(hoy); mas7.setDate(mas7.getDate() + 7);
   const { data } = await supabase
-    .from("v_pagos_proximos")
-    .select("*")
+    .from("pagos")
+    .select("id, concepto, descripcion, valor, fecha_vencimiento, estado")
+    .in("estado", ["pendiente", "vencido"])
+    .lte("fecha_vencimiento", mas7.toISOString().split("T")[0])
+    .order("fecha_vencimiento", { ascending: true })
     .limit(5);
   return data ?? [];
+}
+
+async function getTareasVencidas() {
+  const { data } = await supabase.from("v_tareas_vencidas").select("id");
+  return (data ?? []).length;
+}
+
+async function getUtilidadMes() {
+  const hoy = new Date();
+  const inicio = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
+  const [ingresosRes, gastosRes] = await Promise.all([
+    supabase.from("pagos").select("valor").eq("estado", "pagado").gte("fecha_pago", inicio),
+    supabase.from("gastos").select("valor").gte("fecha_gasto", inicio),
+  ]);
+  const ingresos = (ingresosRes.data ?? []).reduce((s: number, p: any) => s + (p.valor ?? 0), 0);
+  const gastos   = (gastosRes.data ?? []).reduce((s: number, g: any) => s + (g.valor ?? 0), 0);
+  return { ingresos, gastos, utilidad: ingresos - gastos };
 }
 
 async function getStockBajo() {
@@ -69,12 +91,14 @@ async function getStockBajo() {
 }
 
 export default async function DashboardPage() {
-  const [kpis, obras, prospectos, pagos, stockBajo] = await Promise.all([
+  const [kpis, obras, prospectos, pagos, stockBajo, tareasVencidasCount, utilidadMes] = await Promise.all([
     getKPIs(),
     getObrasActivas(),
     getProspectosRecientes(),
     getPagosProximos(),
     getStockBajo(),
+    getTareasVencidas(),
+    getUtilidadMes(),
   ]);
 
   const ejecucion = kpis?.total_presupuesto
@@ -112,11 +136,11 @@ export default async function DashboardPage() {
           color={ejecucion > 90 ? "red" : "yellow"}
         />
         <KPICard
-          title="Prospectos Nuevos"
-          value={kpis?.prospectos_nuevos ?? "—"}
-          subtitle={`${kpis?.clientes_activos ?? 0} clientes activos`}
-          icon={Users}
-          color="purple"
+          title="Utilidad del Mes"
+          value={formatPeso(utilidadMes.utilidad)}
+          subtitle={`Ing: ${formatPeso(utilidadMes.ingresos)}`}
+          icon={TrendingUp}
+          color={utilidadMes.utilidad >= 0 ? "green" : "red"}
         />
       </div>
 
@@ -225,7 +249,16 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               )}
-              {stockBajo.length === 0 && pagos.length === 0 && (
+              {tareasVencidasCount > 0 && (
+                <div className="px-5 py-3 flex items-center gap-3">
+                  <ClipboardList className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{tareasVencidasCount} tarea(s) vencida(s)</p>
+                    <a href="/tareas" className="text-xs text-[#1a5276] hover:underline">Ver tareas →</a>
+                  </div>
+                </div>
+              )}
+              {stockBajo.length === 0 && pagos.length === 0 && tareasVencidasCount === 0 && (
                 <div className="px-5 py-4 flex items-center gap-2 text-green-600 text-sm">
                   <CheckCircle className="w-4 h-4" /> Todo en orden
                 </div>
