@@ -34,26 +34,46 @@ export default function ObraActionsBtn({ obraId, obraEstado, obraAvance }: Props
   async function cambiarEstado(nuevoEstado: Estado) {
     setOpen(false);
     setLoading(true);
-    await fetch(`/api/obras/${obraId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: nuevoEstado }),
-    });
-    setLoading(false);
-    router.refresh();
+    try {
+      const res = await fetch(`/api/obras/${obraId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        alert(`Error al cambiar estado: ${json.error ?? res.statusText}`);
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("No se pudo conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function actualizarAvance() {
     const val = Math.min(100, Math.max(0, Number(avanceInput)));
     setLoading(true);
     setShowAvance(false);
-    await fetch(`/api/obras/${obraId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avance_porcentaje: val }),
-    });
-    setLoading(false);
-    router.refresh();
+    try {
+      const res = await fetch(`/api/obras/${obraId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avance_porcentaje: val }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        alert(`Error al actualizar avance: ${json.error ?? res.statusText}`);
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("No se pudo conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const acciones = [

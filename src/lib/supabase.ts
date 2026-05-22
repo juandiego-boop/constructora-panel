@@ -4,10 +4,11 @@ const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ??
   "https://openclaw-supabase.g6kmjk.easypanel.host";
 
-// Key verified against Kong — generated from the actual Supabase Studio token
-// payload: {"role":"service_role","iss":"supabase-demo","iat":1641769200,"exp":1799535600}
+// Usa SUPABASE_SERVICE_ROLE_KEY del entorno (configurado en EasyPanel y .env.local)
+// Fallback: key demo para instalaciones con JWT secret por defecto
 const serviceRoleKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q";
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsaG9zdCIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE2NDEyNjk2MDAsImV4cCI6MTk1Njg0NTYwMH0.DFpTH5PnuPlWjZXq8_VsjuigScoeGSfc-NQwzCpIiFs";
 
 // Cliente server-side con service role (bypasa RLS)
 export const supabase = createClient(supabaseUrl, serviceRoleKey, {

@@ -13,7 +13,14 @@ export default function EliminarGastoBtn({ gastoId }: { gastoId: string }) {
     setLoading(true);
     try {
       const res = await fetch(`/api/gastos/${gastoId}`, { method: "DELETE" });
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        alert(`Error al eliminar gasto: ${json.error ?? res.statusText}`);
+      }
+    } catch {
+      alert("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Badge from "@/components/Badge";
 import AccionesTareaBtn, { type Tarea } from "./AccionesTareaBtn";
 
@@ -45,6 +45,11 @@ export default function FiltrosTareas({ tareas: tareasInicial, vencidasIds: _ven
   const [tareas, setTareas] = useState<TareaRow[]>(tareasInicial);
   const [filtro, setFiltro] = useState("todas");
   const [busqueda, setBusqueda] = useState("");
+
+  // Re-sincronizar cuando el servidor devuelva nuevas tareas (ej: después de router.refresh())
+  useEffect(() => {
+    setTareas(tareasInicial);
+  }, [tareasInicial]);
 
   // Calcula vencidas localmente (sin depender del servidor)
   const hoy = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);

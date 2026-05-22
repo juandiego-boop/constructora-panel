@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2, PlayCircle, XCircle, RotateCcw,
   Trash2, ChevronDown, Loader2, Pencil, X, Save,
@@ -47,6 +48,7 @@ type Props = {
 };
 
 export default function AccionesTareaBtn({ tarea, onUpdate, onDelete }: Props) {
+  const router = useRouter();
   const [open, setOpen]         = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading]   = useState(false);
@@ -66,10 +68,15 @@ export default function AccionesTareaBtn({ tarea, onUpdate, onDelete }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const json = await res.json();
       if (res.ok) {
-        const updated = await res.json();
-        onUpdate(tarea.id, updated);
+        onUpdate(tarea.id, json);
+        router.refresh(); // Sincronizar server cache
+      } else {
+        alert(`Error al actualizar tarea: ${json.error ?? res.statusText}`);
       }
+    } catch (err) {
+      alert("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
     }
@@ -81,7 +88,15 @@ export default function AccionesTareaBtn({ tarea, onUpdate, onDelete }: Props) {
     setLoading(true);
     try {
       const res = await fetch(`/api/tareas/${tarea.id}`, { method: "DELETE" });
-      if (res.ok) onDelete(tarea.id);
+      if (res.ok) {
+        onDelete(tarea.id);
+        router.refresh();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        alert(`Error al eliminar tarea: ${json.error ?? res.statusText}`);
+      }
+    } catch {
+      alert("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
     }

@@ -39,13 +39,23 @@ export default function ProspectoActionsBtn({ prospectoId, estadoActual }: Props
   async function cambiarEstado(nuevoEstado: EstadoCRM) {
     setOpen(false);
     setLoading(true);
-    await fetch(`/api/prospectos/${prospectoId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado_crm: nuevoEstado }),
-    });
-    setLoading(false);
-    router.refresh();
+    try {
+      const res = await fetch(`/api/prospectos/${prospectoId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado_crm: nuevoEstado }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        alert(`Error al actualizar prospecto: ${json.error ?? res.statusText}`);
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("No se pudo conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const acciones = SIGUIENTE[estadoActual] ?? [];

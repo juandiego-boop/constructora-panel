@@ -10,7 +10,7 @@ async function getInventario() {
   const { data } = await supabase
     .from("inventario")
     .select("*, materiales(nombre, codigo, unidad_medida, categoria, stock_minimo, precio_unitario_referencia)")
-    .order("updated_at", { ascending: false });
+    .order("created_at", { ascending: false });
   return data ?? [];
 }
 
