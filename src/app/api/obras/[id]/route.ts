@@ -13,7 +13,8 @@ export async function GET(
     .eq("id", params.id)
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
-  return NextResponse.json(data);
+  // Map notas -> descripcion for frontend compatibility
+  return NextResponse.json({ ...data, descripcion: (data as any).notas });
 }
 
 export async function PATCH(
@@ -30,9 +31,9 @@ export async function PATCH(
       direccion,
       tipo_obra,
       descripcion,
+      notas,
       codigo_obra,
       presupuesto_total,
-      // Accept both naming conventions
       fecha_inicio_plan,
       fecha_fin_plan,
       fecha_inicio,
@@ -46,12 +47,14 @@ export async function PATCH(
     if (ciudad !== undefined)            update.ciudad            = ciudad;
     if (direccion !== undefined)         update.direccion         = direccion;
     if (tipo_obra !== undefined)         update.tipo_obra         = tipo_obra;
-    if (descripcion !== undefined)       update.descripcion       = descripcion;
     if (codigo_obra !== undefined)       update.codigo_obra       = codigo_obra;
     if (avance_porcentaje !== undefined) update.avance_porcentaje = Number(avance_porcentaje);
     if (presupuesto_total !== undefined) update.presupuesto_total = Number(presupuesto_total);
 
-    // Accept both fecha_inicio_plan/fecha_inicio and fecha_fin_plan/fecha_fin_estimada
+    // Accept both notas and descripcion from frontend, store as notas
+    const notasVal = notas !== undefined ? notas : descripcion;
+    if (notasVal !== undefined)          update.notas             = notasVal;
+
     const fi = fecha_inicio_plan ?? fecha_inicio;
     const ff = fecha_fin_plan    ?? fecha_fin_estimada;
     if (fi !== undefined) update.fecha_inicio_plan = fi || null;
@@ -69,7 +72,8 @@ export async function PATCH(
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    // Map notas -> descripcion
+    return NextResponse.json({ ...data, descripcion: (data as any).notas });
   } catch {
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
