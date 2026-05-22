@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { MoreVertical, Play, Pause, CheckCircle, XCircle, TrendingUp, Loader2 } from "lucide-react";
 
 type Estado = "planificacion" | "en_ejecucion" | "pausada" | "finalizada" | "cancelada";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ObraActionsBtn({ obraId, obraEstado, obraAvance }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAvance, setShowAvance] = useState(false);
@@ -38,7 +40,7 @@ export default function ObraActionsBtn({ obraId, obraEstado, obraAvance }: Props
       body: JSON.stringify({ estado: nuevoEstado }),
     });
     setLoading(false);
-    window.location.reload();
+    router.refresh();
   }
 
   async function actualizarAvance() {
@@ -51,7 +53,7 @@ export default function ObraActionsBtn({ obraId, obraEstado, obraAvance }: Props
       body: JSON.stringify({ avance_porcentaje: val }),
     });
     setLoading(false);
-    window.location.reload();
+    router.refresh();
   }
 
   const acciones = [

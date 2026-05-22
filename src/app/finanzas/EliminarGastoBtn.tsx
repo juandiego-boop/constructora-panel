@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
 
 export default function EliminarGastoBtn({ gastoId }: { gastoId: string }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const eliminar = async () => {
@@ -11,7 +13,7 @@ export default function EliminarGastoBtn({ gastoId }: { gastoId: string }) {
     setLoading(true);
     try {
       const res = await fetch(`/api/gastos/${gastoId}`, { method: "DELETE" });
-      if (res.ok) window.location.reload();
+      if (res.ok) router.refresh();
     } finally {
       setLoading(false);
     }

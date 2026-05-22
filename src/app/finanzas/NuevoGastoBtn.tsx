@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X, Loader2 } from "lucide-react";
 
 // Valores reales del enum categoria_gasto_enum en Supabase
@@ -11,6 +12,7 @@ const CATEGORIAS = [
 type Obra = { id: string; nombre: string; codigo_obra?: string };
 
 export default function NuevoGastoBtn() {
+  const router = useRouter();
   const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
@@ -50,7 +52,7 @@ export default function NuevoGastoBtn() {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X, Loader2, RefreshCw } from "lucide-react";
 
 const CATEGORIAS = [
@@ -19,6 +20,7 @@ type InventarioItem = {
 type Props = { inventario: InventarioItem[] };
 
 export default function NuevoMaterialBtn({ inventario }: Props) {
+  const router = useRouter();
   const [open, setOpen]       = useState(false);
   const [tab, setTab]         = useState<"nuevo" | "ajustar">("nuevo");
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {
@@ -94,7 +96,7 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al ajustar"); return; }
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

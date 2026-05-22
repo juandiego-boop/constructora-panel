@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { MoreVertical, PhoneCall, Star, FileText, Handshake, Trophy, XCircle, Loader2 } from "lucide-react";
 
 type EstadoCRM = "nuevo" | "contactado" | "calificado" | "propuesta" | "negociando" | "ganado" | "perdido";
@@ -22,6 +23,7 @@ const SIGUIENTE: Partial<Record<EstadoCRM, { estado: EstadoCRM; label: string; i
 };
 
 export default function ProspectoActionsBtn({ prospectoId, estadoActual }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export default function ProspectoActionsBtn({ prospectoId, estadoActual }: Props
       body: JSON.stringify({ estado_crm: nuevoEstado }),
     });
     setLoading(false);
-    window.location.reload();
+    router.refresh();
   }
 
   const acciones = SIGUIENTE[estadoActual] ?? [];

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X, Loader2 } from "lucide-react";
 
 const PRIORIDADES = ["critica", "alta", "media", "baja"];
@@ -9,6 +10,7 @@ const ESTADOS     = ["pendiente", "en_progreso", "bloqueada"];
 type Obra = { id: string; nombre: string; codigo_obra?: string };
 
 export default function NuevaTareaBtn() {
+  const router = useRouter();
   const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
@@ -49,7 +51,7 @@ export default function NuevaTareaBtn() {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

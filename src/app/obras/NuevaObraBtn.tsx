@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X, Loader2 } from "lucide-react";
 
 const ESTADOS = [
@@ -10,6 +11,7 @@ const ESTADOS = [
 ];
 
 export default function NuevaObraBtn() {
+  const router = useRouter();
   const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
@@ -42,7 +44,7 @@ export default function NuevaObraBtn() {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

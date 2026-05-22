@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X, Loader2 } from "lucide-react";
 
 const TIPOS = ["casa_nueva", "remodelacion", "ampliacion", "acabados", "diseno", "otro"];
 const FUENTES = ["web", "referido", "instagram", "facebook", "whatsapp", "llamada", "feria", "otro"];
 
 export default function NuevoProspectoBtn() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -68,7 +70,7 @@ export default function NuevoProspectoBtn() {
 
     if (savedOk) {
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     }
 
     setLoading(false);
