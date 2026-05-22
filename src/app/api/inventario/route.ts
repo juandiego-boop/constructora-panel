@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Insertar en materiales — stock_minimo y precio van aquí
+    // Insertar en materiales
     const materialInsert: Record<string, unknown> = { nombre, categoria, unidad_medida };
     if (codigo)      materialInsert.codigo      = codigo;
     if (descripcion) materialInsert.descripcion = descripcion;
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     if (matError) return NextResponse.json({ error: matError.message }, { status: 500 });
 
-    // Insertar en inventario — columna real: cantidad_disponible
+    // Insertar en inventario
     const cantidadReal = Number(cantidad_disponible ?? cantidad_actual ?? 0);
     const inventarioInsert: Record<string, unknown> = {
       material_id:         material.id,
@@ -59,27 +59,52 @@ export async function POST(req: Request) {
   }
 }
 
-// PATCH — Ajustar stock de un item de inventario existente
+// PATCH — Ajustar stock + stock_minimo + precio del material
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { inventario_id, cantidad_actual, cantidad_disponible } = body;
+    const { inventario_id, cantidad_actual, cantidad_disponible, stock_minimo, precio_unitario } = body;
 
     if (!inventario_id) {
       return NextResponse.json({ error: "inventario_id es requerido" }, { status: 400 });
     }
 
-    // Aceptar cantidad_disponible o cantidad_actual (del formulario antiguo)
+    // 1. Actualizar cantidad_disponible en tabla inventario
     const nuevaCantidad = cantidad_disponible ?? cantidad_actual;
-    if (nuevaCantidad === undefined) {
-      return NextResponse.json({ error: "cantidad_disponible es requerida" }, { status: 400 });
+    if (nuevaCantidad !== undefined && nuevaCantidad !== "") {
+      const { error: invError } = await supabase
+        .from("inventario")
+        .update({ cantidad_disponible: Number(nuevaCantidad) })
+        .eq("id", inventario_id);
+      if (invError) return NextResponse.json({ error: invError.message }, { status: 500 });
     }
 
+    // 2. Si hay stock_minimo o precio_unitario, obtener material_id y actualizar tabla materiales
+    const materialUpdate: Record<string, unknown> = {};
+    if (stock_minimo !== undefined && stock_minimo !== "") materialUpdate.stock_minimo = Number(stock_minimo);
+    if (precio_unitario !== undefined && precio_unitario !== "") materialUpdate.precio_unitario_referencia = Number(precio_unitario);
+
+    if (Object.keys(materialUpdate).length > 0) {
+      // Obtener material_id desde inventario
+      const { data: invRow, error: getErr } = await supabase
+        .from("inventario")
+        .select("material_id")
+        .eq("id", inventario_id)
+        .single();
+
+      if (!getErr && invRow?.material_id) {
+        await supabase
+          .from("materiales")
+          .update(materialUpdate)
+          .eq("id", invRow.material_id);
+      }
+    }
+
+    // Retornar el registro actualizado de inventario
     const { data, error } = await supabase
       .from("inventario")
-      .update({ cantidad_disponible: Number(nuevaCantidad) })
+      .select("*, materiales(nombre, unidad_medida, stock_minimo, precio_unitario_referencia)")
       .eq("id", inventario_id)
-      .select()
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

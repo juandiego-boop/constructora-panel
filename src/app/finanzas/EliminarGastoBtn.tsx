@@ -2,18 +2,16 @@
 
 import { useState } from "react";
 import { Trash2, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function EliminarGastoBtn({ gastoId }: { gastoId: string }) {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const eliminar = async () => {
     if (!confirm("¿Eliminar este gasto? No se puede deshacer.")) return;
     setLoading(true);
     try {
-      await fetch(`/api/gastos/${gastoId}`, { method: "DELETE" });
-      router.refresh();
+      const res = await fetch(`/api/gastos/${gastoId}`, { method: "DELETE" });
+      if (res.ok) window.location.reload();
     } finally {
       setLoading(false);
     }

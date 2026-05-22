@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Plus, X, Loader2, RefreshCw } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const CATEGORIAS = [
   "concreto", "acero", "madera", "acabados",
@@ -25,7 +24,6 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
   const [success, setSuccess] = useState("");
-  const router = useRouter();
 
   // ── Formulario Nuevo Material ────────────────────────────────────────────────
   const [formNuevo, setFormNuevo] = useState({
@@ -70,9 +68,8 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
-      setSuccess(`✓ Material "${formNuevo.nombre}" agregado al inventario.`);
-      setFormNuevo({ nombre: "", codigo: "", categoria: "materiales", unidad_medida: "unidad", descripcion: "", cantidad_actual: "0", stock_minimo: "0", precio_unitario: "", ubicacion: "" });
-      router.refresh();
+      setOpen(false);
+      window.location.reload();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {
@@ -96,9 +93,8 @@ export default function NuevoMaterialBtn({ inventario }: Props) {
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al ajustar"); return; }
-      setSuccess("✓ Stock actualizado correctamente.");
-      setFormAjuste({ inventario_id: "", cantidad_actual: "", stock_minimo: "", precio_unitario: "" });
-      router.refresh();
+      setOpen(false);
+      window.location.reload();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

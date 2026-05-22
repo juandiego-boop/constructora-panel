@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const PRIORIDADES = ["critica", "alta", "media", "baja"];
 const ESTADOS     = ["pendiente", "en_progreso", "bloqueada"];
@@ -19,7 +18,6 @@ export default function NuevaTareaBtn() {
     responsable: "", fecha_vencimiento: "",
     prioridad: "media", estado: "pendiente",
   });
-  const router = useRouter();
 
   useEffect(() => {
     if (open && obras.length === 0) {
@@ -51,8 +49,7 @@ export default function NuevaTareaBtn() {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      setForm({ titulo: "", descripcion: "", obra_id: "", responsable: "", fecha_vencimiento: "", prioridad: "media", estado: "pendiente" });
-      router.refresh();
+      window.location.reload();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

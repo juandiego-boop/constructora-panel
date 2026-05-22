@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -9,8 +10,9 @@ import {
   DollarSign,
   Package,
   ClipboardList,
-  Settings,
   Building2,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -25,6 +27,17 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router   = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+    }
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 w-60 bg-[#1a5276] text-white flex flex-col shadow-xl z-40">
@@ -60,9 +73,22 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-white/10 text-xs text-blue-200">
-        <p className="font-medium">Sistema v1.0</p>
-        <p>Powered by n8n + Supabase</p>
+      <div className="px-3 py-3 border-t border-white/10 space-y-3">
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium text-blue-100 hover:bg-white/10 hover:text-white transition-all disabled:opacity-60"
+        >
+          {loggingOut
+            ? <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin" />
+            : <LogOut className="w-5 h-5 flex-shrink-0" />
+          }
+          Cerrar sesión
+        </button>
+        <div className="px-3 text-xs text-blue-300">
+          <p className="font-medium">Sistema v1.0</p>
+          <p>Powered by n8n + Supabase</p>
+        </div>
       </div>
     </aside>
   );

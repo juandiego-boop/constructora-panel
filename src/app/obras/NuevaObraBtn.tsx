@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const ESTADOS = [
   { value: "planificacion", label: "Planificación" },
@@ -19,7 +18,6 @@ export default function NuevaObraBtn() {
     ciudad: "", direccion: "", estado: "planificacion",
     presupuesto_total: "", fecha_inicio: "", fecha_fin_estimada: "",
   });
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +42,7 @@ export default function NuevaObraBtn() {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      setForm({ nombre_obra: "", codigo_obra: "", descripcion: "", ciudad: "", direccion: "", estado: "planificacion", presupuesto_total: "", fecha_inicio: "", fecha_fin_estimada: "" });
-      router.refresh();
+      window.location.reload();
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {

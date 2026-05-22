@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const TIPOS = ["casa_nueva", "remodelacion", "ampliacion", "acabados", "diseno", "otro"];
 const FUENTES = ["web", "referido", "instagram", "facebook", "whatsapp", "llamada", "feria", "otro"];
@@ -15,8 +14,6 @@ export default function NuevoProspectoBtn() {
     tipo_proyecto: "casa_nueva", fuente: "web",
     presupuesto_estimado: "", notas: "",
   });
-  const router = useRouter();
-
   const [error, setError] = useState("");
 
   const payload = {
@@ -71,8 +68,7 @@ export default function NuevoProspectoBtn() {
 
     if (savedOk) {
       setOpen(false);
-      setForm({ nombre: "", telefono: "", email: "", ciudad: "", tipo_proyecto: "casa_nueva", fuente: "web", presupuesto_estimado: "", notas: "" });
-      router.refresh();
+      window.location.reload();
     }
 
     setLoading(false);
