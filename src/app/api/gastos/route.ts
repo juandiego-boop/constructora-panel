@@ -6,6 +6,16 @@ import { NextResponse } from "next/server";
 // Schema real gastos: id, obra_id, categoria, descripcion, valor, fecha_gasto,
 //   proveedor_id (UUID FK), estado, notas, created_at, updated_at
 
+export async function GET() {
+  const { data, error } = await supabase
+    .from("gastos")
+    .select("id, categoria, descripcion, valor, fecha_gasto, estado, obra_id, obras(nombre)")
+    .order("fecha_gasto", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? []);
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

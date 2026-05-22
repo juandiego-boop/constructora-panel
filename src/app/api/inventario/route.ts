@@ -3,6 +3,16 @@ export const dynamic = "force-dynamic";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
+// GET — Listar inventario con datos de material
+export async function GET() {
+  const { data, error } = await supabase
+    .from("inventario")
+    .select("id, cantidad_disponible, ubicacion, material_id, materiales(nombre, unidad_medida, categoria, stock_minimo, precio_unitario_referencia)")
+    .order("created_at", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? []);
+}
+
 // POST — Crear nuevo material + entrada en inventario
 export async function POST(req: Request) {
   try {
@@ -79,13 +89,12 @@ export async function PATCH(req: Request) {
       if (invError) return NextResponse.json({ error: invError.message }, { status: 500 });
     }
 
-    // 2. Si hay stock_minimo o precio_unitario, obtener material_id y actualizar tabla materiales
+    // 2. Si hay stock_minimo o precio_unitario, actualizar tabla materiales
     const materialUpdate: Record<string, unknown> = {};
     if (stock_minimo !== undefined && stock_minimo !== "") materialUpdate.stock_minimo = Number(stock_minimo);
     if (precio_unitario !== undefined && precio_unitario !== "") materialUpdate.precio_unitario_referencia = Number(precio_unitario);
 
     if (Object.keys(materialUpdate).length > 0) {
-      // Obtener material_id desde inventario
       const { data: invRow, error: getErr } = await supabase
         .from("inventario")
         .select("material_id")

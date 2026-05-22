@@ -38,18 +38,17 @@ export async function POST(req: Request) {
     }
 
     const insert: Record<string, unknown> = {
-      nombre:           obra_nombre,
-      codigo_obra:      codigo_obra || generarCodigo(), // NOT NULL — auto-genera si no viene
-      estado:           estado || "planificacion",
+      nombre:            obra_nombre,
+      codigo_obra:       codigo_obra || generarCodigo(),
+      estado:            estado || "planificacion",
       avance_porcentaje: 0,
     };
 
-    if (ciudad)            insert.ciudad           = ciudad;
-    if (direccion)         insert.direccion        = direccion;
-    if (tipo_obra)         insert.tipo_obra        = tipo_obra;
+    if (ciudad)            insert.ciudad            = ciudad;
+    if (direccion)         insert.direccion         = direccion;
+    if (tipo_obra)         insert.tipo_obra         = tipo_obra;
     if (presupuesto_total) insert.presupuesto_total = Number(presupuesto_total);
 
-    // Acepta nombres viejos y nuevos de columna de fecha
     const fechaInicio = fecha_inicio_plan || fecha_inicio;
     const fechaFin    = fecha_fin_plan    || fecha_fin_estimada;
     if (fechaInicio) insert.fecha_inicio_plan = fechaInicio;
