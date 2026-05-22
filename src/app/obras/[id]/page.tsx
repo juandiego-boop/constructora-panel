@@ -34,17 +34,17 @@ const TAREA_COLOR: Record<string, string> = {
 };
 
 async function getObra(id: string) {
-  // Lee directamente de la tabla obras — no depende de vistas que filtran por cliente
   const { data, error } = await supabase
     .from("obras")
     .select(
       "id, codigo_obra, nombre, estado, avance_porcentaje, presupuesto_total, " +
-      "ciudad, direccion, fecha_inicio_plan, fecha_fin_plan, tipo_obra, descripcion, created_at"
+      "ciudad, direccion, fecha_inicio_plan, fecha_fin_plan, tipo_obra, notas, created_at"
     )
     .eq("id", id)
     .single();
   if (error) console.error("[obras/[id]] getObra error:", error.message);
-  return data;
+  // Map notas -> descripcion for frontend compatibility
+  return data ? { ...data, descripcion: (data as any).notas } : null;
 }
 
 async function getCostoEjecutado(obraId: string): Promise<number> {
@@ -96,7 +96,6 @@ export default async function ObraDetallePage({ params }: Props) {
 
   return (
     <div>
-      {/* Breadcrumb */}
       <div className="mb-4">
         <Link href="/obras" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#1a5276] transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> Volver a Obras
@@ -116,7 +115,6 @@ export default async function ObraDetallePage({ params }: Props) {
         }
       />
 
-      {/* Estado + alertas */}
       <div className="flex items-center gap-3 mb-6">
         <Badge variant={estadoObraVariant[obra.estado] ?? "gray"} className="text-sm px-3 py-1">
           {ESTADO_LABELS[obra.estado] ?? obra.estado}
@@ -128,14 +126,12 @@ export default async function ObraDetallePage({ params }: Props) {
         )}
       </div>
 
-      {/* Descripción */}
-      {obra.descripcion && (
+      {obra.notas && (
         <p className="text-sm text-gray-500 mb-5 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
-          {obra.descripcion}
+          {obra.notas}
         </p>
       )}
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
           <p className="text-xs text-gray-400 mb-1">Avance físico</p>
@@ -166,7 +162,6 @@ export default async function ObraDetallePage({ params }: Props) {
         </div>
       </div>
 
-      {/* Fechas */}
       {(obra.fecha_inicio_plan || obra.fecha_fin_plan) && (
         <div className="flex gap-6 mb-6 text-sm text-gray-500">
           {obra.fecha_inicio_plan && (
@@ -191,7 +186,6 @@ export default async function ObraDetallePage({ params }: Props) {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Tareas */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
             <CheckSquare className="w-4 h-4 text-[#1a5276]" />
@@ -230,7 +224,6 @@ export default async function ObraDetallePage({ params }: Props) {
           </div>
         </div>
 
-        {/* Gastos */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-[#1a5276]" />
@@ -259,4 +252,4 @@ export default async function ObraDetallePage({ params }: Props) {
       </div>
     </div>
   );
-    }
+                                                                                                               }
