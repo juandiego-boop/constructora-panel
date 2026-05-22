@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// Valores reales del enum categoria_gasto_enum en Supabase
 const CATEGORIAS = [
-  "materiales", "mano_obra", "maquinaria", "transporte", "administrativo", "otro"
+  "material", "mano_obra", "transporte", "herramienta", "subcontrato", "indirecto", "otro"
 ];
 
 type Obra = { id: string; nombre: string; codigo_obra?: string };
@@ -16,7 +17,7 @@ export default function NuevoGastoBtn() {
   const [error, setError]     = useState("");
   const [obras, setObras]     = useState<Obra[]>([]);
   const [form, setForm]       = useState({
-    obra_id: "", categoria: "materiales", descripcion: "",
+    obra_id: "", categoria: "material", descripcion: "",
     monto: "", fecha_gasto: new Date().toISOString().split("T")[0],
     proveedor: "",
   });
@@ -51,7 +52,7 @@ export default function NuevoGastoBtn() {
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Error al guardar"); return; }
       setOpen(false);
-      setForm({ obra_id: "", categoria: "materiales", descripcion: "", monto: "", fecha_gasto: new Date().toISOString().split("T")[0], proveedor: "" });
+      setForm({ obra_id: "", categoria: "material", descripcion: "", monto: "", fecha_gasto: new Date().toISOString().split("T")[0], proveedor: "" });
       router.refresh();
     } catch {
       setError("No se pudo conectar con el servidor.");
